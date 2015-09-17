@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="utf-8"?>
+<items version="2" >
+
+    <item
+        jar="/home/alex/Android/Sdk/extras/android/m2repository/com/android/support/support-annotations/22.2.0/support-annotations-22.2.0.jar"
+        jumboMode="false"
+        revision="22.0.1"
+        sha1="66b42a1f3eb7676070b7ef7f14b603483aecbee1">
+        <dex dex="/home/alex/android-projects/SmartHomeApp/app/build/intermediates/pre-dexed/debug/support-annotations-22.2.0-8518d85d2f9cb99a148048e062acbdd60890fa8c.jar" />
+    </item>
+    <item
+        jar="/home/alex/android-projects/SmartHome/app/libs/gson-2.3.1.jar"
+        jumboMode="false"
+        revision="22.0.1"
+        sha1="ecb6e1f8e4b0e84c4b886c2f14a1500caf309757">
+        <dex dex="/home/alex/android-projects/SmartHome/app/build/intermediates/pre-dexed/release/gson-2.3.1-4f2760cd133ca71649b46b0501234470a03f96ff.jar" />
+    </item>
+    <item
+        jar="/home/alex/android-projects/SmartHomeApp/app/libs/gson-2.3.1.jar"
+        jumboMode="false"
+        revision="22.0.1"
+        sha1="ecb6e1f8e4b0e84c4b886c2f14a1500caf309757">
+        <dex dex="/home/alex/android-projects/SmartHomeApp/app/build/intermediates/pre-dexed/debug/gson-2.3.1-adb84f920819b811c7b9e0c418840dba1698a92c.jar" />
+    </item>
+    <item
+        jar="/home/alex/android-projects/SmartHomeApp/app/build/intermediates/exploded-aar/com.android.support/support-v4/22.2.0/jars/libs/internal_impl-22.2.0.jar"
+        jumboMode="false"
+        revision="22.0.1"
+        sha1="57f2ab85c164ff1676ec64dee787981c046fab79">
+        <dex dex="/home/alex/android-projects/SmartHomeApp/app/build/intermediates/pre-dexed/debug/internal_impl-22.2.0-e5af8ba2cf62b482a381bf30a6291f9ea292ede9.jar" />
+    </item>
+    <item
+        jar="/home/alex/android-projects/SmartHomeApp/app/build/intermediates/exploded-aar/com.android.support/appcompat-v7/22.2.0/jars/classes.jar"
+        jumboMode="false"
+        revision="22.0.1"
+        sha1="73753982da6bde518f3a4c6b372749981d14d1a0">
+        <dex dex="/home/alex/android-projects/SmartHomeApp/app/build/intermediates/pre-dexed/debug/classes-e59987903062265a56457c2da00262531605e875.jar" />
+    </item>
+    <item
+        jar="/home/alex/android-projects/SmartHomeApp/app/build/intermediates/exploded-aar/com.android.support/support-v4/22.2.0/jars/classes.jar"
+        jumboMode="false"
+        revision="22.0.1"
+        sha1="1ee588ff2c4daf7b97c1cbf922a6c7f027285c2f">
+        <dex dex="/home/alex/android-projects/SmartHomeApp/app/build/intermediates/pre-dexed/debug/classes-c1bf01c5850ff4add84ac1ac8dc10929fed897db.jar" />
+    </item>
+
+</items>

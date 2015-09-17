@@ -1,0 +1,155 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent" android:layout_height="match_parent">
+
+    <TextView
+        android:id="@+id/settings_title"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="@string/setting_server_header"
+        android:gravity="center"
+        android:textSize="25sp"/>
+    <TextView
+        android:id="@+id/settings_serverURL_desc"
+        style="@style/TextViewSettings"
+        android:layout_below="@+id/settings_title"
+        android:text="@string/setting_url_textView"/>
+
+    <EditText
+        android:id="@+id/settings_serverURL_field"
+        android:layout_marginTop="20dp"
+        style="@style/EditTextSettings"
+        android:layout_toRightOf="@+id/settings_serverURL_desc"
+        android:layout_toEndOf="@+id/settings_serverURL_desc"
+        android:layout_below="@+id/settings_title"
+        android:hint="@string/setting_url_editText_hint"
+        android:inputType="textUri"/>
+
+    <TextView
+        android:id="@+id/settings_serverPort_desc"
+        style="@style/TextViewSettings"
+        android:layout_below="@+id/settings_serverURL_desc"
+        android:text="@string/setting_port_textView"/>
+    <EditText
+        android:id="@+id/settings_serverPort_field"
+        style="@style/EditTextSettings"
+        android:layout_toRightOf="@+id/settings_serverPort_desc"
+        android:layout_toEndOf="@+id/settings_serverPort_desc"
+        android:layout_below="@+id/settings_serverURL_field"
+        android:hint="@string/setting_port_editText_hint"
+        android:inputType="number"/>
+
+    <TextView
+        android:id="@+id/settings_serverUser_desc"
+        android:layout_below="@+id/settings_serverPort_desc"
+        style="@style/TextViewSettings"
+        android:text="@string/setting_user_textView"/>
+
+    <EditText
+        android:id="@+id/settings_serverUser_field"
+        style="@style/EditTextSettings"
+        android:layout_toRightOf="@+id/settings_serverUser_desc"
+        android:layout_toEndOf="@+id/settings_serverUser_desc"
+        android:layout_below="@+id/settings_serverPort_field"
+        android:hint="@string/setting_user_editText_hint"
+        android:inputType="textPersonName"/>
+
+    <TextView
+        android:id="@+id/settings_serverPwd_desc"
+        style="@style/TextViewSettings"
+        android:layout_below="@+id/settings_serverUser_desc"
+        android:text="@string/setting_password_textView"/>
+
+    <EditText
+        android:id="@+id/settings_serverPwd_field"
+        style="@style/EditTextSettings"
+        android:layout_toRightOf="@+id/settings_serverPwd_desc"
+        android:layout_toEndOf="@+id/settings_serverPwd_desc"
+        android:layout_below="@+id/settings_serverUser_field"
+        android:inputType="textPassword"/>
+
+    <Button
+        android:id="@+id/settings_test_connection"
+        android:layout_below="@+id/settings_serverPwd_desc"
+        android:layout_width="wrap_content"
+        android:layout_height="40dp"
+        android:layout_marginLeft="20dp"
+        android:text="@string/setting_save"/>
+
+    <ProgressBar
+        android:id="@+id/settings_connection_progressbar"
+        android:layout_below="@+id/settings_serverPwd_desc"
+        android:layout_width="40dp"
+        android:layout_height="40dp"
+        android:visibility="visible"
+        style="?android:attr/progressBarStyleLarge"
+        android:layout_marginLeft="10dp"
+        android:layout_marginStart="10dp"
+        android:layout_toRightOf="@+id/settings_test_connection"
+        android:layout_toEndOf="@+id/settings_test_connection"/>
+
+    <ImageView
+        android:id="@+id/setting_connection_success"
+        android:layout_width="40dp"
+        android:layout_height="40dp"
+        android:src="@drawable/smiley_happy"
+        android:layout_below="@+id/settings_serverPwd_desc"
+        android:visibility="invisible"
+        android:layout_marginLeft="10dp"
+        android:layout_marginStart="10dp"
+        android:layout_toRightOf="@+id/settings_test_connection"
+        android:layout_toEndOf="@+id/settings_test_connection"/>
+
+    <ImageView
+        android:id="@+id/setting_connection_failure"
+        android:layout_width="40dp"
+        android:layout_height="40dp"
+        android:src="@drawable/smiley_unhappy"
+        android:layout_below="@+id/settings_serverPwd_desc"
+        android:visibility="visible"
+        android:layout_marginLeft="10dp"
+        android:layout_marginStart="10dp"
+        android:layout_toRightOf="@+id/settings_test_connection"
+        android:layout_toEndOf="@+id/settings_test_connection"/>
+
+
+    <FrameLayout
+        android:layout_width="match_parent"
+        android:layout_height="30dp"
+        android:background="@drawable/dslv_divider"
+        android:layout_below="@+id/settings_test_connection"/>
+
+    <TextView
+        android:id="@+id/settings_other_title"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="30dp"
+        android:layout_below="@+id/settings_test_connection"
+        android:text="@string/setting_section2_header"
+        android:gravity="center"
+        android:textSize="25sp"/>
+
+    <TextView
+        android:id="@+id/setting_other_touch_vib_desc"
+        android:layout_width="wrap_content"
+        android:layout_height="35dp"
+        android:layout_below="@+id/settings_other_title"
+        android:layout_marginTop="3dp"
+        android:layout_marginLeft="20dp"
+        android:layout_marginStart="20dp"
+        android:text="@string/setting_textView_buttonVib"
+        android:textSize="15sp"/>
+    <Switch
+        android:id="@+id/setting_other_touch_vib_switch"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:textSize="15sp"
+        android:layout_toRightOf="@+id/setting_other_touch_vib_desc"
+        android:layout_toEndOf="@+id/setting_other_touch_vib_desc"
+        android:layout_below="@+id/settings_other_title"
+        android:layout_marginTop="0dp"
+        android:layout_marginRight="20dp"
+        android:layout_marginEnd="20dp"
+        android:layout_alignParentRight="true"
+        android:layout_alignParentEnd="true"/>
+</RelativeLayout>

@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <!-- Base application theme. -->
+    <style name="AppTheme" parent="Theme.AppCompat.Light.DarkActionBar">
+        <!-- Customize your theme here. -->
+        <item name="android:windowBackground">@color/windowBackground</item>
+        <item name="actionBarStyle">@style/ActionBar</item>
+        <item name="buttonStyle">@style/ButtonStyle</item>
+        <item name="android:textColor">@color/white</item>
+        <item name="editTextStyle">@style/EditTextBaseStyle</item>
+        <item name="android:textViewStyle">@style/TextViewBaseStyle</item>
+    </style>
+
+    <style name="ActionBar"
+        parent="Widget.AppCompat.ActionBar.Solid">
+        <item name="android:background">@drawable/actionbar_background</item>
+        <item name="titleTextStyle">@style/ActionBarTitleText</item>
+
+        <!-- Support library compatibility -->
+        <item name="background">@drawable/actionbar_background</item>
+    </style>
+
+    <!-- ActionBar title text -->
+    <style name="ActionBarTitleText"
+        parent="TextAppearance.AppCompat.Widget.ActionBar.Title">
+        <item name="android:textColor">@color/actionbar_titleText</item>
+    </style>
+
+    <style name="ButtonStyle" parent="Widget.AppCompat.Button">
+        <item name="android:textColor">@color/black</item>
+        <item name="android:padding">0dp</item>
+        <item name="android:minWidth">88dp</item>
+        <item name="android:minHeight">36dp</item>
+        <item name="android:layout_margin">3dp</item>
+        <item name="android:background">@drawable/button_selector</item>
+    </style>
+
+    <style name="EditTextBaseStyle" parent="Base.V12.Widget.AppCompat.EditText">
+        <item name="android:textColor">#FF9100</item>
+        <item name="android:textColorHint">#5F5F5E</item>
+    </style>
+
+    <style name="EditTextSettings" parent="EditTextBaseStyle">
+        <item name="android:layout_width">250dp</item>
+        <item name="android:layout_height">38dp</item>
+        <item name="android:textSize">15sp</item>
+        <item name="android:layout_margin">0dp</item>
+        <item name="android:layout_gravity">center</item>
+    </style>
+
+    <style name="TextViewBaseStyle" parent="TextAppearance.AppCompat.Medium">
+        <item name="android:textColor">#FF9100</item>
+        <item name="android:textColorHint">#5F5F5E</item>
+    </style>
+
+    <style name="TextViewSettings" parent="TextViewBaseStyle">
+        <item name="android:layout_width">70dp</item>
+        <item name="android:layout_height">38dp</item>
+        <item name="android:layout_marginTop">0dp</item>
+        <item name="android:layout_marginLeft">20dp</item>
+        <item name="android:textSize">15sp</item>
+        <item name="android:gravity">center_vertical</item>
+    </style>
+</resources>

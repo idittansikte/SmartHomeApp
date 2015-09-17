@@ -1,0 +1,81 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:id="@+id/add_switch_popup"
+    android:gravity="center"
+    android:background="@drawable/popup_window">
+    
+    <TextView
+        android:id="@+id/add_switch_popup_title"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentTop="true"
+        android:layout_centerHorizontal="true"
+        android:textColor="@color/white"
+        android:layout_marginTop="5dp"
+        android:text="ADD SWITCH"/>
+<LinearLayout
+    android:id="@+id/frame_text"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:gravity="center"
+    android:layout_below="@+id/add_switch_popup_title">
+    <TextView
+        android:id="@+id/add_switch_popup_textfield_desc"
+        android:layout_width="wrap_content"
+        android:layout_height="40dp"
+        android:gravity="center"
+        android:layout_marginTop="20dp"
+        android:textSize="15sp"
+        android:text="Name:"
+        android:layout_marginLeft="30dp"
+        android:layout_gravity="center"/>
+
+    <EditText
+        android:id="@+id/add_switch_popup_edittext"
+        android:layout_width="200dp"
+        android:layout_height="40dp"
+        android:gravity="center_vertical"
+        android:layout_marginLeft="10dp"
+        android:textSize="15sp"
+        android:hint="enter a switch name"
+        android:inputType="textPersonName"
+        android:layout_gravity="center"
+        android:layout_marginTop="22dp"/>
+    </LinearLayout>
+    <FrameLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="20dp"
+        android:layout_below="@+id/frame_text">
+
+        <Button
+            android:id="@+id/add_switch_popup_cancel_button"
+            android:layout_width="80dp"
+            android:layout_height="50dp"
+            android:layout_gravity="start"
+            android:layout_marginLeft="5dp"
+            android:layout_marginBottom="5dp"
+            android:text="CANCEL"/>
+
+
+        <Button
+            android:id="@+id/add_switch_popup_delete_button"
+            android:layout_width="80dp"
+            android:layout_height="50dp"
+            android:layout_gravity="center"
+            android:layout_marginBottom="5dp"
+            android:text="DELETE"/>
+
+        <Button
+            android:id="@+id/add_switch_popup_add_button"
+            android:layout_width="80dp"
+            android:layout_height="50dp"
+            android:layout_gravity="end"
+            android:layout_marginRight="5dp"
+            android:layout_marginBottom="5dp"
+            android:text="Add"/>
+
+    </FrameLayout>
+</RelativeLayout>
