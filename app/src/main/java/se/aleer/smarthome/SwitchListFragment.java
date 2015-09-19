@@ -2,31 +2,89 @@ package se.aleer.smarthome;
 
 import android.app.Activity;
 import android.app.AlertDialog;
+import android.app.FragmentManager;
+import android.app.FragmentTransaction;
 import android.content.DialogInterface;
+import android.content.Intent;
 import android.os.Bundle;
-import android.support.v4.app.Fragment;
+import android.app.Fragment;
 import android.util.Log;
 import android.view.LayoutInflater;
+import android.view.Menu;
+import android.view.MenuInflater;
+import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Toast;
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 import java.util.TreeSet;
 import android.os.Handler;
 
 import se.aleer.smarthome.drag_sort_listview.DragSortController;
 import se.aleer.smarthome.drag_sort_listview.DragSortListView;
 
-public class SwitchListFragment extends Fragment {
+public class SwitchListFragment extends Fragment implements FragmentManager.OnBackStackChangedListener {
+
 
     public static final String ARG_ITEM_ID = "favorite_list";
+    private String TAG = "SwitchListFragment";
+    private Storage mStorage;
+    private Activity mActivity;
+    List<Switch> mSwitches;
+    private DragSortListView mDragSortListView;
+    private SwitchListAdapter mSwitchListAdapter;
+    final Handler mHandler = new Handler();
+    OnEditSwitchListener mCallback;
 
-    private DragSortListView.DropListener onDrop = new DragSortListView.DropListener()
+    public interface OnEditSwitchListener {
+        public void onEditSwitch(Switch swtch);
+    }
+
+    // Handles events from SwitchManagerFragment
+    public void manageManagedSwitch(Switch swtch, boolean remove)
     {
+        if(remove){
+            deleteSwitch(swtch);
+        }
+        else{
+            if (mSwitchListAdapter.contains(swtch.getId()))
+                updateSwitch(swtch, 333);
+            else{
+                swtch.setId(getUniqueId());
+                add(swtch);
+            }
+
+        }
+    }
+
+    @Override
+    public void onAttach(Activity activity)
+    {
+        super.onAttach(activity);
+        // This makes sure that the container activity has implemented
+        // the callback interface. If not, it throws an exception
+        try {
+            mCallback = (OnEditSwitchListener) activity;
+        } catch (ClassCastException e) {
+            throw new ClassCastException(activity.toString()
+                    + " must implement OnEditSwitchListener");
+        }
+
+    }
+
+    private DragSortListView.DragSortListener dragSortListener = new DragSortListView.DragSortListener() {
         @Override
-        public void drop(int from, int to)
-        {
+        public void drag(int from, int to) {
+            // Disable data fetcher is it doesn't interrupt the drag
+            mHandler.removeCallbacks(mRunnable);
+        }
+
+        @Override
+        public void drop(int from, int to) {
             if (from != to)
             {
                 Switch item = mSwitchListAdapter.getItem(from);
@@ -34,33 +92,24 @@ public class SwitchListFragment extends Fragment {
                 mSwitchListAdapter.insert(item, to);
                 mStorage.saveSwitchList(mActivity, mSwitches);
                 Toast.makeText(mActivity, "mSwitchList: " + mSwitchListAdapter.getCount(), Toast.LENGTH_SHORT).show();
-            }else{
-                SwitchManagerPopup popup = new SwitchManagerPopup(mActivity, yo);
+            }else{ // If dropped ad the same position activate switch-edit
+                Switch s = mSwitchListAdapter.getItem(from);
+                if (s != null)
+                    Log.d(TAG, "Switch is not null");
+                mCallback.onEditSwitch(mSwitchListAdapter.getItem(from));
+                /*SwitchManagerPopup popup = new SwitchManagerPopup(mActivity, yo);
                 popup.setSwitch(mSwitchListAdapter.getItem(from), from);
-                popup.initiatePopup();
+                popup.initiatePopup();*/
             }
+            // Enable it again
+            mRunnable.run();
         }
-    };
-    SwitchListFragment yo = this;
-    private DragSortListView.RemoveListener onRemove = new DragSortListView.RemoveListener()
-    {
+
         @Override
-        public void remove(int which)
-        {
+        public void remove(int which) {
             mSwitchListAdapter.remove(mSwitchListAdapter.getItem(which));
         }
     };
-
-    private List<Integer> codes = new ArrayList<>();
-
-
-    private String TAG = "SwitchList";
-    private Storage mStorage;
-    private Activity mActivity;
-    List<Switch> mSwitches;
-    private DragSortListView mDragSortListView;
-    private SwitchListAdapter mSwitchListAdapter;
-    final Handler mHandler = new Handler();
 
     // Update SwitchListAdapter in interval
     final Runnable mRunnable = new Runnable() {
@@ -70,7 +119,7 @@ public class SwitchListFragment extends Fragment {
             TCPAsyncTask getStatusArduino = new TCPAsyncTask(){
                 @Override
                 protected void onPostExecute(String s) {
-                    Toast.makeText(mActivity, "Updating...", Toast.LENGTH_SHORT).show();
+                    //Toast.makeText(mActivity, "Updating...", Toast.LENGTH_SHORT).show();
                     updateListAdapter(s);
                     mSwitchListAdapter.notifyDataSetChanged();
                 }
@@ -85,8 +134,18 @@ public class SwitchListFragment extends Fragment {
         super.onCreate(savedInstanceState);
         mActivity = getActivity();
         mStorage = new Storage();
+        setHasOptionsMenu(true);
+        getActivity().getFragmentManager().addOnBackStackChangedListener(this);
         //mHandler.postDelayed(mRunnable, 15000);
         //mRunnable.run();
+    }
+
+
+    public void onBackStackChanged() {
+        // enable Up button only if there are entries on the back stack
+        if(getActivity().getFragmentManager().getBackStackEntryCount() < 1) {
+            ((RemoteControl)getActivity()).hideUpButton();
+        }
     }
 
     @Override
@@ -116,6 +175,32 @@ public class SwitchListFragment extends Fragment {
     }
 
     @Override
+    public void onCreateOptionsMenu(Menu menu, MenuInflater inflater) {
+        // Inflate the menu; this adds items to the action bar if it is present.
+        inflater.inflate(R.menu.menu_fragment_switch_list, menu);
+    }
+
+    @Override
+    public boolean onOptionsItemSelected(MenuItem item) {
+        // Handle action bar item clicks here. The action bar will
+        // automatically handle clicks on the Home/Up button, so long
+        // as you specify a parent activity in AndroidManifest.xml.
+        // Handle presses on the action bar items
+        switch (item.getItemId()) {
+            case R.id.action_settings:
+                Intent intent = new Intent(mActivity, Settings.class);
+                startActivity(intent);
+                return true;
+            case R.id.action_add_switch:
+                mCallback.onEditSwitch(null);
+                return true;
+            default:
+                return super.onOptionsItemSelected(item);
+        }
+
+    }
+
+    @Override
     public View onCreateView(LayoutInflater inflater, final ViewGroup container,
                              Bundle savedInstanceState) {
         View view = inflater.inflate(R.layout.fragment_switch_list, container,
@@ -130,14 +215,15 @@ public class SwitchListFragment extends Fragment {
             mStorage.saveSwitchList(mActivity, mSwitches);
         }
             if(mSwitches.size() == 0){
-                showAlert(getResources().getString(R.string.empty_switch_list_title),
+                new Alerter(mActivity).showAlert(getResources().getString(R.string.empty_switch_list_title),
                         getResources().getString(R.string.empty_switch_list_msg));
             }
             mSwitchListAdapter = new SwitchListAdapter(mActivity, mSwitches);
-            mDragSortListView.setAdapter(mSwitchListAdapter);
+        mDragSortListView.setAdapter(mSwitchListAdapter);
 
-            mDragSortListView.setDropListener(onDrop);
-            mDragSortListView.setRemoveListener(onRemove);
+            //mDragSortListView.setDropListener(onDrop);
+            //mDragSortListView.setRemoveListener(onRemove);
+            mDragSortListView.setDragSortListener(dragSortListener);
 
             DragSortController controller = new DragSortController(mDragSortListView);
             controller.setDragHandleId(R.id.single_list_head);
@@ -173,35 +259,10 @@ public class SwitchListFragment extends Fragment {
         return view;
     }
 
-    private void findViewsById(View view) {
-        mDragSortListView = (DragSortListView) view.findViewById(R.id.listview);
-    }
-
-    public void showAlert(String title, String message) {
-        if (mActivity != null && !mActivity.isFinishing()) {
-            AlertDialog alertDialog = new AlertDialog.Builder(mActivity)
-                    .create();
-            alertDialog.setTitle(title);
-            alertDialog.setMessage(message);
-            alertDialog.setCancelable(false);
-
-            // setting OK Button
-            alertDialog.setButton(AlertDialog.BUTTON_POSITIVE, "OK",
-                    new DialogInterface.OnClickListener() {
-
-                        public void onClick(DialogInterface dialog, int which) {
-                            dialog.dismiss();
-                            getFragmentManager().popBackStackImmediate();
-                        }
-                    });
-            alertDialog.show();
-        }
-    }
-
     public void add(String name, int controller, int status)
     {
         Switch swtch = new Switch(controller, 0, name);
-        swtch.setState(status);
+        swtch.setStatus(status);
         add(swtch);
     }
 
@@ -234,13 +295,14 @@ public class SwitchListFragment extends Fragment {
     }
     public void add(String name) {
         Switch swtch = new Switch(getUniqueId(), 0, name);
-        swtch.setState(0);
+        swtch.setStatus(0);
         add(swtch);
     }
 
     public void updateSwitch(Switch swtch, int position){
+        int pos = mSwitchListAdapter.getPosition(swtch);
         mSwitchListAdapter.remove(swtch);
-        mSwitchListAdapter.insert(swtch, position);
+        mSwitchListAdapter.insert(swtch, pos);
         mStorage.saveSwitchList(mActivity, mSwitches);
     }
 
@@ -289,43 +351,66 @@ public class SwitchListFragment extends Fragment {
         }
     }
 
-    private boolean updateListAdapter(String serverSwitches) {
+    private boolean updateListAdapter(String serverResponse) {
         // Check if response from server
-        if (serverSwitches == null || serverSwitches.equals("")) {
+        if (serverResponse == null || serverResponse.equals("")) {
             return false;
         }
 
-        String[] switches = serverSwitches.split(":");
-        // Debug print
-        for (String tmp : switches) {
-            Log.d("####---->>>", tmp);
-        }
-        // Go through statuses stored at server
-        for (int i = 0; i < switches.length; ++i) {
-            Log.d("SLF", "Message from server: " + serverSwitches);
-            // Something is wrong if this have happen
+        // Validate and parse serverResponse into a map
+        Map<Integer, Integer> serverSwitches = new HashMap<Integer, Integer>();
+        String[] switches = serverResponse.split(":");
+        for (int i = 0; i < switches.length; ++i){
             if (switches.length < i + 1) {
                 Toast.makeText(mActivity, "Weird switch list from server... Contact someone", Toast.LENGTH_SHORT).show();
                 return false;
             }
-            // Convert to ints
-            int controller = Integer.valueOf(switches[i]);
+            int id = Integer.valueOf(switches[i]);
             int status = Integer.valueOf(switches[++i]);
+            if(id < 10 || id > 255){
+                Toast.makeText(mActivity, "Invalid switch-id at server", Toast.LENGTH_SHORT).show();
+                return false;
+            }
+            if(status > 1 || status < 0){
+                Toast.makeText(mActivity, "Invalid switch-status at server", Toast.LENGTH_SHORT).show();
+                return false;
+            }
+            serverSwitches.put(id, status);
+        }
+
+        // Go through statuses stored at server
+        for (Map.Entry<Integer, Integer> entry : serverSwitches.entrySet()) {
+            // Convert to ints
+            int id = entry.getKey();
+            int status = entry.getValue();
             // For every switch in adapter-list. Check if server switch exists on app
             boolean switchExist = false;
             for (int adapterPos = 0; adapterPos < mSwitchListAdapter.getCount(); ++adapterPos) {
                 Switch sw = mSwitchListAdapter.getItem(adapterPos);
                 // If switch exists on app, set servers saved status
-                if (sw.getId() == controller) {
+                if (sw.getId() == id) {
                     mSwitchListAdapter.setItemStatus(adapterPos, status);
                     switchExist = true;
                 }
             } // adapterlist
+
             if (!switchExist) {
-                add("Sync\'ed", controller, status);
+                add("Sync\'ed", id, status);
+            }
+        }
+
+        // Check if we have to remove an object
+        for (int adapterPos = 0; adapterPos < mSwitchListAdapter.getCount(); ++adapterPos) {
+            Switch sw = mSwitchListAdapter.getItem(adapterPos);
+
+            if (! serverSwitches.containsKey(sw.getId())){
+
+                this.deleteSwitch(sw);
             }
         }
         return true;
     }
+
+
 
 }

@@ -7,7 +7,6 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ArrayAdapter;
-import android.widget.Button;
 import android.widget.ImageButton;
 import android.widget.ProgressBar;
 import android.widget.TextView;
@@ -39,7 +38,7 @@ public class SwitchListAdapter extends ArrayAdapter<Switch> {
 
     public void setItemStatus(int position, int status)
     {
-        mSwitches.get(position).setState(status);
+        mSwitches.get(position).setStatus(status);
     }
 
     @Override
@@ -74,7 +73,7 @@ public class SwitchListAdapter extends ArrayAdapter<Switch> {
         final ProgressBar pgb = holder.progressBar;
         final ImageButton btn = holder.switchButton;
         // Set curSwitch's state.
-        int curSwitchState = curSwitch.getState();
+        int curSwitchState = curSwitch.getStatus();
         if(curSwitchState == -1) // Unknown
         {
             Log.d("SLA", "Setting switchState = -1");
@@ -102,12 +101,12 @@ public class SwitchListAdapter extends ArrayAdapter<Switch> {
                         } else {
                             Toast.makeText(mContext, s + " " + curSwitch.getId(), Toast.LENGTH_SHORT).show();
                             if (s.equals("OK")) {
-                                if (curSwitch.getState() == 1) {
+                                if (curSwitch.getStatus() == 1) {
                                     btn.setImageResource(R.drawable.button_off_128);
-                                    curSwitch.setState(0);
-                                } else if (curSwitch.getState() == 0) {
+                                    curSwitch.setStatus(0);
+                                } else if (curSwitch.getStatus() == 0) {
                                     btn.setImageResource(R.drawable.button_on_128);
-                                    curSwitch.setState(1);
+                                    curSwitch.setStatus(1);
                                 }
                             }
 
@@ -118,7 +117,7 @@ public class SwitchListAdapter extends ArrayAdapter<Switch> {
                 };
                 btn.setVisibility(View.INVISIBLE);
                 pgb.setVisibility(View.VISIBLE);
-                tcpClient.execute("S:" + curSwitch.getId() + ":" + (curSwitch.getState() == 1 ? "0" : "1"));
+                tcpClient.execute("S:" + curSwitch.getId() + ":" + (curSwitch.getStatus() == 1 ? "0" : "1"));
             }
         });
 
@@ -143,5 +142,26 @@ public class SwitchListAdapter extends ArrayAdapter<Switch> {
         super.remove(swtch);
         mSwitches.remove(swtch);
         notifyDataSetChanged();
+    }
+
+    @Override
+    public int getPosition(Switch swtch) {
+        Log.d("SwitchListAdapter", "Search for index START");
+        Log.d("SwitchListAdaper", "mSwitches size: " + mSwitches.size());
+        int i = mSwitches.indexOf(swtch);
+        Log.d("SwitchListAdapter", "Search for index DONE");
+        return i;
+    }
+
+    // Check if list contains object with an id
+    public boolean contains(int id)
+    {
+        for(Switch swtch : mSwitches)
+        {
+            if(swtch.getId() == id){
+                return true;
+            }
+        }
+        return false;
     }
 }

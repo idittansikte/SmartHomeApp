@@ -50,7 +50,8 @@
     </style>
 
     <style name="TextViewBaseStyle" parent="TextAppearance.AppCompat.Medium">
-        <item name="android:textColor">#FF9100</item>
+        <item name="android:textColor">@color/textView</item>
+        <item name="android:fontFamily">sans-serif-light</item>
         <item name="android:textColorHint">#5F5F5E</item>
     </style>
 

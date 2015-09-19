@@ -20,5 +20,10 @@
 
     <string name="setting_section2_header">Other</string>
     <string name="setting_textView_buttonVib">Button vibration</string>
+
+    <!-- Switch Manager -->
+    <string name="single_protocol_spinner_desc">Protocol:</string>
+    <string name="action_save_switch">Save switch</string>
+    <string name="action_delete_switch">Delete switch</string>
 </resources>
 

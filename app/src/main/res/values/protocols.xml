@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Protocol names -->
+    <string name="protocol_proove">Proove</string>
+    <string name="protocol_nexa">Nexa</string>
+    <!-- Protocol values-->
+    <integer name="protocol_proove">1</integer>
+    <integer name="protocol_nexa">2</integer>
+    <!-- Spinner in switch-manager -->
+    <string-array name="protocol_array">
+        <item>@string/protocol_proove</item>
+        <item>@string/protocol_nexa</item>
+    </string-array>
+</resources>

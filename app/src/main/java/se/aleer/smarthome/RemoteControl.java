@@ -2,11 +2,11 @@ package se.aleer.smarthome;
 
 import android.app.ActionBar;
 import android.app.TabActivity;
-import android.support.v4.app.Fragment;
+import android.app.Fragment;
+import android.support.annotation.Nullable;
 import android.support.v4.app.FragmentActivity;
-import android.support.v4.app.FragmentManager;
-import android.support.v4.app.FragmentTabHost;
-import android.support.v4.app.FragmentTransaction;
+import android.app.FragmentManager;
+import android.app.FragmentTransaction;
 import android.support.v7.app.AppCompatActivity;
 import android.content.Context;
 import android.content.Intent;
@@ -24,55 +24,74 @@ import android.widget.EditText;
 import android.widget.PopupWindow;
 import android.widget.TabHost;
 
-public class RemoteControl extends AppCompatActivity {
+public class RemoteControl extends AppCompatActivity implements SwitchListFragment.OnEditSwitchListener, SwitchManagerFragment.OnManagedSwitchListener {
 
     private static final String TAG = "RemoteControl";
 
     private Fragment contentFragment;
     SwitchListFragment switchListFragment;
     SettingFragment settingFragment;
-    FragmentTabHost mTabHost;
     SwitchManagerPopup mAddSwitchPopup;
+
+    // If edit-switch mode selected in SwitchListFragment this is runs
+    public void onEditSwitch(Switch swtch)
+    {
+        // #### Switch fragment from SwitchListFragment to SwitchManagerFragment ####
+        SwitchManagerFragment managerFragment = (SwitchManagerFragment)
+                getFragmentManager().findFragmentByTag(SwitchManagerFragment.ARG_ITEM_ID);
+
+        if (managerFragment == null) {
+            // Create fragment
+            managerFragment = new SwitchManagerFragment();
+        }
+        // Set switch so that it can be edited
+        managerFragment.setSwitch(swtch);
+        FragmentTransaction transaction = getFragmentManager().beginTransaction();
+        // Replace whatever it is in the fragment container with this one...
+        transaction.replace(R.id.content_frame, managerFragment, SwitchManagerFragment.ARG_ITEM_ID);
+        // Add transaction to the back stack so the user can navigate back
+        transaction.addToBackStack(null);
+        transaction.commit();
+    }
+
+    // If SwitchManagerFragment needs update switch in SwitchListFragment this is executed.
+    public void onManagedSwitch(Switch swtch, boolean remove){
+        // Remove SwitchManagerFragment from stack so its clean to the next time..
+        getFragmentManager().popBackStack();
+        // #### Switch fragment from SwitchListFragment to SwitchManagerFragment ####
+        SwitchListFragment listFragment = (SwitchListFragment)
+                getFragmentManager().findFragmentByTag(SwitchListFragment.ARG_ITEM_ID);
+
+        if (listFragment == null) {
+            // Create fragment
+            listFragment = new SwitchListFragment();
+        }
+        // Set switch so that it can be edited
+        listFragment.manageManagedSwitch(swtch, remove);
+        FragmentTransaction transaction = getFragmentManager().beginTransaction();
+        // Replace whatever it is in the fragment container with this one...
+        transaction.replace(R.id.content_frame, listFragment, SwitchListFragment.ARG_ITEM_ID);
+        // Add transaction to the back stack so the user can navigate back
+        //transaction.addToBackStack(null);
+        transaction.commit();
+    }
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_remote_control);
 
-        //switchListFragment = new SwitchListFragment(RemoteControl.this, findViewById(R.id.listview));
-        FragmentManager fragmentManager = getSupportFragmentManager();
-
-        /**
-         * This is called when orientation is changed.
-         */
-        if (savedInstanceState != null) {
-            /*if (savedInstanceState.containsKey("content")) {
-                String content = savedInstanceState.getString("content");
-                if (content.equals(SettingFragment.ARG_ITEM_ID)) {
-                    if (fragmentManager.findFragmentByTag(SettingFragment.ARG_ITEM_ID) != null) {
-                        //setFragmentTitle(R.string.app_name);
-                        contentFragment = fragmentManager
-                                .findFragmentByTag(SettingFragment.ARG_ITEM_ID);
-                    }
-                }
-            }*/
-            if (fragmentManager.findFragmentByTag(SwitchListFragment.ARG_ITEM_ID) != null) {
-                switchListFragment = (SwitchListFragment) fragmentManager
-                        .findFragmentByTag(SwitchListFragment.ARG_ITEM_ID);
-                contentFragment = switchListFragment;
-            }
-        } else {
-            switchListFragment = new SwitchListFragment();
-            switchListFragment.setHasOptionsMenu(false);
-            switchContent(switchListFragment, SwitchListFragment.ARG_ITEM_ID);
-        }
+        FragmentManager fragmentManager = getFragmentManager();
+        FragmentTransaction fragmentTransaction = fragmentManager.beginTransaction();
+        SwitchListFragment switchListFragment = new SwitchListFragment();
+        fragmentTransaction.add(R.id.content_frame, switchListFragment, SwitchListFragment.ARG_ITEM_ID);
+        fragmentTransaction.commit();
 
         /** Adding tabs src: */
         //mTabHost = (FragmentTabHost)findViewById(android.R.id.tabhost);
         //mTabHost.setup(this, getSupportFragmentManager(), android.R.id.tabcontent);
         //mTabHost.addTab(mTabHost.newTabSpec("Switches").setIndicator("Switches"), SwitchListFragment.class, null);
         //mTabHost.addTab(mTabHost.newTabSpec("Settings").setIndicator("Tab 2"), Settings.class, null);
-
     }
 
     @Override
@@ -99,14 +118,10 @@ public class RemoteControl extends AppCompatActivity {
         // as you specify a parent activity in AndroidManifest.xml.
         // Handle presses on the action bar items
         switch (item.getItemId()) {
-            case R.id.action_settings:
-                openSettings();
-                return true;
-            case R.id.action_add_switch:
-                if (mAddSwitchPopup == null) {
-                    mAddSwitchPopup = new SwitchManagerPopup(this, switchListFragment);
-                }
-                mAddSwitchPopup.initiatePopup();
+            case android.R.id.home:
+                Log.d(TAG, "Stack count: " + getFragmentManager().getBackStackEntryCount());
+                getFragmentManager().popBackStack();
+                Log.d(TAG, "Stack count: " + getFragmentManager().getBackStackEntryCount());
                 return true;
             default:
                 return super.onOptionsItemSelected(item);
@@ -114,15 +129,12 @@ public class RemoteControl extends AppCompatActivity {
 
     }
 
-
-    private void openSettings() {
-        Intent intent = new Intent(this, Settings.class);
-        startActivity(intent);
-    }
+    public void showUpButton() { getSupportActionBar().setDisplayHomeAsUpEnabled(true); }
+    public void hideUpButton() { getSupportActionBar().setDisplayHomeAsUpEnabled(false); }
 
 
 
-    public void switchContent(Fragment fragment, String tag) {
+    /*public void switchContent(Fragment fragment, String tag) {
         FragmentManager fragmentManager = getSupportFragmentManager();
         while (fragmentManager.popBackStackImmediate());
 
@@ -137,7 +149,7 @@ public class RemoteControl extends AppCompatActivity {
             transaction.commit();
             contentFragment = fragment;
         }
-    }
+    }*/
 
     /*
  * We call super.onBackPressed(); when the stack entry count is > 0. if it
@@ -147,13 +159,24 @@ public class RemoteControl extends AppCompatActivity {
  */
     @Override
     public void onBackPressed() {
-        FragmentManager fm = getSupportFragmentManager();
+        SwitchManagerFragment smf = (SwitchManagerFragment)getFragmentManager().findFragmentByTag(SwitchManagerFragment.ARG_ITEM_ID);
+        if(smf != null && smf.isVisible()) {
+            SwitchListFragment fragment = new SwitchListFragment();
+            FragmentManager fm = getFragmentManager();
+            FragmentTransaction transaction = fm.beginTransaction();
+            transaction.replace(R.id.content_frame, fragment, SwitchListFragment.ARG_ITEM_ID);
+            transaction.commit();
+        }
+        else {
+            super.onBackPressed();
+        }
+        /*FragmentManager fm = getSupportFragmentManager();
         if (fm.getBackStackEntryCount() > 0) {
             super.onBackPressed();
         } else if (contentFragment instanceof SwitchListFragment
                 || fm.getBackStackEntryCount() == 0) {
             finish();
-        }
+        }*/
     }
 
 }

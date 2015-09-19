@@ -16,18 +16,38 @@ import java.net.UnknownHostException;
 
 public class TCPAsyncTask extends AsyncTask<String, Void, String> {
 
-    TCPAsyncTask(){};
+    String mHost;
+    int mPort;
 
+    TCPAsyncTask()
+    {
+        mHost = null;
+        mPort = 0;
+    }
+    TCPAsyncTask(String host, int port)
+    {
+        mHost = host;
+        mPort = port;
+    }
     @Override
     protected String doInBackground(String... params){
         //mSwitchView.setVisibility();
         String result = null;
-        String ipAddress = "192.168.1.151";
-        int port = 8888;
+        String ipAddress;
+        int port;
+        if(mHost == null || mPort == 0) {
+            ipAddress = "192.168.1.151";
+            port = 8888;
+        }
+        else
+        {
+            ipAddress = mHost;
+            port = mPort;
+        }
         try{
             // Create client socket
             Socket socket = new Socket(ipAddress,port);
-            socket.setSoTimeout(20000); // 30 Seconds timeout
+            socket.setSoTimeout(20000); // 20 Seconds timeout
             // Get input stream of the  client socket
             InputStream is = socket.getInputStream();
             // Get output stream of the client socket

@@ -6,38 +6,23 @@
     android:paddingTop="6dp"
     android:id="@+id/single_list_head">
 
-
-    <!--Button
-        android:id="@+id/button_left"
-        android:layout_alignParentLeft="true"
-        android:layout_alignParentStart="true"
-        android:layout_width="100dp"
-        android:layout_height="50dp"
-        android:layout_gravity="start"
-        android:focusable = "false"
-        android:focusableInTouchMode = "false"
-        android:text="OFF"/-->
     <FrameLayout
-        android:layout_width="match_parent"
-        android:layout_height="50dp">
+        android:layout_width="wrap_content"
+        android:layout_height="50dp"
+        android:focusable = "false"
+        android:focusableInTouchMode = "false">
         <TextView
             android:id="@+id/text"
-            android:textSize="15sp"
+            android:textSize="20sp"
             android:layout_width="120dp"
             android:layout_height="match_parent"
-            android:layout_gravity="center"
-            android:gravity="center" />
+            android:layout_gravity="left"
+            android:layout_marginLeft="15dp"
+            android:gravity="center_vertical"
+            android:textStyle="bold"
+            android:focusable = "false"
+            android:focusableInTouchMode = "false"/>
     </FrameLayout>
-    <!--Button
-        android:id="@+id/button_right"
-        android:layout_alignParentRight="true"
-        android:layout_alignParentEnd="true"
-        android:layout_width="100dp"
-        android:layout_height="50dp"
-        android:layout_gravity="end"
-        android:focusable = "false"
-        android:focusableInTouchMode = "false"
-        android:text="ON"/-->
     <ImageButton
         android:id="@+id/single_list_button"
         android:src="@drawable/button_off_128"

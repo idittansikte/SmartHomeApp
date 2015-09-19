@@ -2,13 +2,23 @@
 <RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent" android:layout_height="match_parent">
 
-    <TextView
+    <FrameLayout
         android:id="@+id/settings_title"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="@string/setting_server_header"
-        android:gravity="center"
-        android:textSize="25sp"/>
+        android:background="@drawable/setting_divider"
+        android:layout_marginTop="10dp"
+        android:layout_marginBottom="10dp">
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:textStyle="bold"
+            android:text="@string/setting_server_header"
+            android:gravity="left"
+            android:layout_marginLeft="10dp"
+            android:textSize="25sp"/>
+    </FrameLayout>
+
     <TextView
         android:id="@+id/settings_serverURL_desc"
         style="@style/TextViewSettings"
@@ -112,22 +122,24 @@
         android:layout_toRightOf="@+id/settings_test_connection"
         android:layout_toEndOf="@+id/settings_test_connection"/>
 
-
     <FrameLayout
-        android:layout_width="match_parent"
-        android:layout_height="30dp"
-        android:background="@drawable/dslv_divider"
-        android:layout_below="@+id/settings_test_connection"/>
-
-    <TextView
         android:id="@+id/settings_other_title"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginTop="30dp"
         android:layout_below="@+id/settings_test_connection"
-        android:text="@string/setting_section2_header"
-        android:gravity="center"
-        android:textSize="25sp"/>
+        android:background="@drawable/setting_divider"
+        android:layout_marginTop="10dp"
+        android:layout_marginBottom="10dp">
+        <TextView
+
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:textStyle="bold"
+            android:text="@string/setting_section2_header"
+            android:gravity="left"
+            android:layout_marginLeft="10dp"
+            android:textSize="25sp"/>
+    </FrameLayout>
 
     <TextView
         android:id="@+id/setting_other_touch_vib_desc"

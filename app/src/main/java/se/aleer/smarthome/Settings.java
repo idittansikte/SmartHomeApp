@@ -65,20 +65,42 @@ public class Settings extends AppCompatActivity {
         mHolder.test_connnection.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-
+                int port;
+                String host;
+                try {
+                    port = Integer.parseInt(mHolder.port.getText().toString());
+                    host = mHolder.url.getText().toString();
+                }catch (Exception e){
+                    return;
+                }
                 mHolder.progressBar.setVisibility(View.VISIBLE);
                 mHolder.success.setVisibility(View.INVISIBLE);
                 mHolder.failure.setVisibility(View.INVISIBLE);
                 mHolder.test_connnection.setEnabled(false);
                 mHolder.test_connnection.setHovered(true);
-                int port;
-                try {
-                    port = Integer.parseInt(mHolder.port.getText().toString());
-                }catch (Exception e){
-                    port = 80;
-                }
-                new HttpAsyncTask(mHolder.url.getText().toString(), port , "", "").execute();
+                // TODO: Cancel option
+                // TODO: check port range
+                TCPAsyncTask serverStatus = new TCPAsyncTask(host, port){
+                    @Override
+                    protected void onPostExecute(String s) {
 
+                        mHolder.progressBar.setVisibility(View.INVISIBLE);
+                        mHolder.test_connnection.setEnabled(true);
+                        mHolder.test_connnection.setHovered(false);
+                        if (s == null || s.equals("")){
+                            mHolder.failure.setVisibility(View.VISIBLE);
+                            return;
+                        }
+                        else if (s.equals("OK")){
+                            mHolder.success.setVisibility(View.VISIBLE);
+                        }
+                        else
+                            mHolder.failure.setVisibility(View.VISIBLE);
+                        Log.d("SsSSSssS", s);
+
+                    }
+                };
+                serverStatus.execute("C");
             }
         });
 
@@ -138,27 +160,27 @@ public class Settings extends AppCompatActivity {
         }
 
         public boolean isServerAvailable() {
+
             if ( ! isNetworkAvailable(getApplicationContext())) {
                 mHolder.failure.setVisibility(View.VISIBLE);
                 return false;
             }
 
             try {
-                URL url = new URL("http", mUrl, mPort, "");
-                HttpURLConnection urlConnection = (HttpURLConnection) url.openConnection();
-                urlConnection.setConnectTimeout(10000);
-                urlConnection.setReadTimeout(10000);
-                try {
-                    InputStream in = new BufferedInputStream(urlConnection.getInputStream());
+                String pingCmd = "ping -c 5 " + mUrl;
+                String pingResult = "";
 
-                } catch (Exception e) {
-                    int respCode = urlConnection.getResponseCode();
-                    Toast.makeText(context, "Responce code: " + respCode, Toast.LENGTH_SHORT).show();
-                    return false;
+                Runtime r = Runtime.getRuntime();
+                Process p = r.exec(pingCmd);
+                BufferedReader in = new BufferedReader(new InputStreamReader(p.getInputStream()));
+                String inputLine;
+                while ((inputLine = in.readLine()) != null)
+                {
+                    pingResult += inputLine;
                 }
-                finally {
-                    urlConnection.disconnect();
-                }
+
+                in.close();
+                Log.d("::::::", pingResult);
             }
             catch (Exception e){
                 Log.e("URL ERROR", e.getMessage());
