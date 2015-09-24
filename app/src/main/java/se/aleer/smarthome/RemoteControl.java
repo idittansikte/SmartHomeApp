@@ -1,28 +1,17 @@
 package se.aleer.smarthome;
 
 import android.app.ActionBar;
-import android.app.TabActivity;
-import android.app.Fragment;
-import android.support.annotation.Nullable;
-import android.support.v4.app.FragmentActivity;
-import android.app.FragmentManager;
-import android.app.FragmentTransaction;
+import android.support.design.widget.TabLayout;
+import android.support.v4.app.Fragment;
+import android.support.v4.app.FragmentManager;
+import android.support.v4.app.FragmentPagerAdapter;
+import android.support.v4.app.FragmentTransaction;
+import android.support.v4.view.ViewPager;
 import android.support.v7.app.AppCompatActivity;
-import android.content.Context;
-import android.content.Intent;
 import android.os.Bundle;
 import android.util.Log;
-import android.view.Gravity;
-import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuItem;
-import android.view.View;
-import android.view.ViewGroup;
-import android.widget.AnalogClock;
-import android.widget.Button;
-import android.widget.EditText;
-import android.widget.PopupWindow;
-import android.widget.TabHost;
 
 public class RemoteControl extends AppCompatActivity implements SwitchListFragment.OnEditSwitchListener, SwitchManagerFragment.OnManagedSwitchListener {
 
@@ -32,12 +21,12 @@ public class RemoteControl extends AppCompatActivity implements SwitchListFragme
     SwitchListFragment switchListFragment;
     SettingFragment settingFragment;
     SwitchManagerPopup mAddSwitchPopup;
-
+    FragmentPagerAdapter mAdapterViewPager;
     // If edit-switch mode selected in SwitchListFragment this is runs
     public void onEditSwitch(Switch swtch)
     {
         // #### Switch fragment from SwitchListFragment to SwitchManagerFragment ####
-        SwitchManagerFragment managerFragment = (SwitchManagerFragment)
+       /* SwitchManagerFragment managerFragment = (SwitchManagerFragment)
                 getFragmentManager().findFragmentByTag(SwitchManagerFragment.ARG_ITEM_ID);
 
         if (managerFragment == null) {
@@ -51,12 +40,12 @@ public class RemoteControl extends AppCompatActivity implements SwitchListFragme
         transaction.replace(R.id.content_frame, managerFragment, SwitchManagerFragment.ARG_ITEM_ID);
         // Add transaction to the back stack so the user can navigate back
         transaction.addToBackStack(null);
-        transaction.commit();
+        transaction.commit();*/
     }
 
     // If SwitchManagerFragment needs update switch in SwitchListFragment this is executed.
     public void onManagedSwitch(Switch swtch, boolean remove){
-        // Remove SwitchManagerFragment from stack so its clean to the next time..
+       /* // Remove SwitchManagerFragment from stack so its clean to the next time..
         getFragmentManager().popBackStack();
         // #### Switch fragment from SwitchListFragment to SwitchManagerFragment ####
         SwitchListFragment listFragment = (SwitchListFragment)
@@ -73,20 +62,29 @@ public class RemoteControl extends AppCompatActivity implements SwitchListFragme
         transaction.replace(R.id.content_frame, listFragment, SwitchListFragment.ARG_ITEM_ID);
         // Add transaction to the back stack so the user can navigate back
         //transaction.addToBackStack(null);
-        transaction.commit();
+        transaction.commit();*/
     }
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_remote_control);
-
-        FragmentManager fragmentManager = getFragmentManager();
+        /*FragmentManager fragmentManager = getFragmentManager();
         FragmentTransaction fragmentTransaction = fragmentManager.beginTransaction();
         SwitchListFragment switchListFragment = new SwitchListFragment();
         fragmentTransaction.add(R.id.content_frame, switchListFragment, SwitchListFragment.ARG_ITEM_ID);
         fragmentTransaction.commit();
-
+*/
+        // Get the ViewPager and set it's PagerAdapter so that it can display items
+        ViewPager viewPager = (ViewPager) findViewById(R.id.viewpager);
+        mAdapterViewPager = new MyFragmentPagerAdapter(getSupportFragmentManager(), RemoteControl.this);
+        viewPager.setAdapter(mAdapterViewPager);
+        // Give the TabLayout the ViewPager
+        TabLayout tabLayout = (TabLayout) findViewById(R.id.sliding_tabs);
+        // Force full width
+        tabLayout.setTabGravity(TabLayout.GRAVITY_FILL);
+        tabLayout.setTabMode(TabLayout.MODE_FIXED);
+        tabLayout.setupWithViewPager(viewPager);
         /** Adding tabs src: */
         //mTabHost = (FragmentTabHost)findViewById(android.R.id.tabhost);
         //mTabHost.setup(this, getSupportFragmentManager(), android.R.id.tabcontent);
@@ -159,7 +157,7 @@ public class RemoteControl extends AppCompatActivity implements SwitchListFragme
  */
     @Override
     public void onBackPressed() {
-        SwitchManagerFragment smf = (SwitchManagerFragment)getFragmentManager().findFragmentByTag(SwitchManagerFragment.ARG_ITEM_ID);
+        /*SwitchManagerFragment smf = (SwitchManagerFragment)getFragmentManager().findFragmentByTag(SwitchManagerFragment.ARG_ITEM_ID);
         if(smf != null && smf.isVisible()) {
             SwitchListFragment fragment = new SwitchListFragment();
             FragmentManager fm = getFragmentManager();
@@ -167,16 +165,10 @@ public class RemoteControl extends AppCompatActivity implements SwitchListFragme
             transaction.replace(R.id.content_frame, fragment, SwitchListFragment.ARG_ITEM_ID);
             transaction.commit();
         }
-        else {
+        else {*/
             super.onBackPressed();
-        }
-        /*FragmentManager fm = getSupportFragmentManager();
-        if (fm.getBackStackEntryCount() > 0) {
-            super.onBackPressed();
-        } else if (contentFragment instanceof SwitchListFragment
-                || fm.getBackStackEntryCount() == 0) {
-            finish();
-        }*/
+        //}
+
     }
 
 }

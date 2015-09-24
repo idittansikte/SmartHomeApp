@@ -4,10 +4,11 @@ import android.app.Activity;
 import android.app.AlertDialog;
 import android.app.FragmentManager;
 import android.app.FragmentTransaction;
+import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.os.Bundle;
-import android.app.Fragment;
+import android.support.v4.app.Fragment;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.Menu;
@@ -29,6 +30,8 @@ import se.aleer.smarthome.drag_sort_listview.DragSortListView;
 
 public class SwitchListFragment extends Fragment implements FragmentManager.OnBackStackChangedListener {
 
+    private String mTitle; // Tab title set by adapter when creating instance
+    private int mPage; // FragmentAdapter using this to keep track of tabs/fragments
 
     public static final String ARG_ITEM_ID = "favorite_list";
     private String TAG = "SwitchListFragment";
@@ -39,6 +42,15 @@ public class SwitchListFragment extends Fragment implements FragmentManager.OnBa
     private SwitchListAdapter mSwitchListAdapter;
     final Handler mHandler = new Handler();
     OnEditSwitchListener mCallback;
+
+    public static SwitchListFragment newInstance(int page, String title) {
+        SwitchListFragment fragment = new SwitchListFragment();
+        Bundle args = new Bundle();
+        args.putInt("page", page);
+        args.putString("title", title);
+        fragment.setArguments(args);
+        return fragment;
+    }
 
     public interface OnEditSwitchListener {
         public void onEditSwitch(Switch swtch);
@@ -111,20 +123,26 @@ public class SwitchListFragment extends Fragment implements FragmentManager.OnBa
         }
     };
 
+    final Context c = this.getActivity();
     // Update SwitchListAdapter in interval
     final Runnable mRunnable = new Runnable() {
         @Override
         public void run() {
             // Get and set status for all switches...
-            TCPAsyncTask getStatusArduino = new TCPAsyncTask(){
-                @Override
-                protected void onPostExecute(String s) {
-                    //Toast.makeText(mActivity, "Updating...", Toast.LENGTH_SHORT).show();
-                    updateListAdapter(s);
-                    mSwitchListAdapter.notifyDataSetChanged();
-                }
-            };
-            getStatusArduino.execute("G");
+            StorageSetting ss = new StorageSetting(getActivity());
+            String port = ss.getString(StorageSetting.PREFS_SERVER_PORT);
+            if (port != null) {
+                TCPAsyncTask getStatusArduino = new TCPAsyncTask(ss.getString(StorageSetting.PREFS_SERVER_URL),
+                        Integer.parseInt(port)) {
+                    @Override
+                    protected void onPostExecute(String s) {
+                        //Toast.makeText(mActivity, "Updating...", Toast.LENGTH_SHORT).show();
+                        updateListAdapter(s);
+                        mSwitchListAdapter.notifyDataSetChanged();
+                    }
+                };
+                getStatusArduino.execute("G");
+            }
             mHandler.postDelayed(this, 10000);
         }
     };
@@ -132,12 +150,16 @@ public class SwitchListFragment extends Fragment implements FragmentManager.OnBa
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        // Set arguments from newInstance
+        mPage = getArguments().getInt("page", 0);
+        mTitle = getArguments().getString("title");
+
         mActivity = getActivity();
         mStorage = new Storage();
         setHasOptionsMenu(true);
         getActivity().getFragmentManager().addOnBackStackChangedListener(this);
-        //mHandler.postDelayed(mRunnable, 15000);
-        //mRunnable.run();
+        // Show back button in menu
+        ((RemoteControl)getActivity()).hideUpButton();
     }
 
 
@@ -219,7 +241,7 @@ public class SwitchListFragment extends Fragment implements FragmentManager.OnBa
                         getResources().getString(R.string.empty_switch_list_msg));
             }
             mSwitchListAdapter = new SwitchListAdapter(mActivity, mSwitches);
-        mDragSortListView.setAdapter(mSwitchListAdapter);
+            mDragSortListView.setAdapter(mSwitchListAdapter);
 
             //mDragSortListView.setDropListener(onDrop);
             //mDragSortListView.setRemoveListener(onRemove);
@@ -238,24 +260,27 @@ public class SwitchListFragment extends Fragment implements FragmentManager.OnBa
             mDragSortListView.setDragEnabled(true);
 
         // Get and set status for all switches...
-        TCPAsyncTask getStatusArduino = new TCPAsyncTask(){
-            @Override
-            protected void onPostExecute(String s)
-            {
-                if(!updateListAdapter(s)) { // If no response from server, set all switch status to 0;
-                    Log.d("SLF", "No message from server, setting all switch statuses to 0");
+        StorageSetting storageSetting = new StorageSetting(getActivity());
+        String port = storageSetting.getString(StorageSetting.PREFS_SERVER_PORT);
+        if (port != null) {
+            TCPAsyncTask getStatusArduino = new TCPAsyncTask(storageSetting.getString(StorageSetting.PREFS_SERVER_URL), Integer.parseInt(port)) {
+                @Override
+                protected void onPostExecute(String s) {
+                    if (!updateListAdapter(s)) { // If no response from server, set all switch status to 0;
+                    /*Log.d("SLF", "No message from server, setting all switch statuses to 0");
                     for (int adapterPos = 0; adapterPos < mSwitchListAdapter.getCount(); ++adapterPos) {
                         Switch sw = mSwitchListAdapter.getItem(adapterPos);
                         mSwitchListAdapter.setItemStatus(adapterPos, 0);
+                    }*/
+
                     }
-
+                    // Update switch-list
+                    mSwitchListAdapter.notifyDataSetChanged();
                 }
-                // Update switch-list
-                mSwitchListAdapter.notifyDataSetChanged();
-            }
 
-        };
-        getStatusArduino.execute("G");
+            };
+            getStatusArduino.execute("G");
+        }
         return view;
     }
 
@@ -333,10 +358,6 @@ public class SwitchListFragment extends Fragment implements FragmentManager.OnBa
         tcpClient.execute("R:" + swtch.getId());
     }
 
-    public void removeEnable(){
-        //controller.setRemoveEnabled(true);
-    }
-
     private int getUniqueId(){
         int id = 10;
         TreeSet<Integer> takenIds = new TreeSet<>();
@@ -354,6 +375,7 @@ public class SwitchListFragment extends Fragment implements FragmentManager.OnBa
     private boolean updateListAdapter(String serverResponse) {
         // Check if response from server
         if (serverResponse == null || serverResponse.equals("")) {
+            disableSwitches();
             return false;
         }
 
@@ -411,6 +433,11 @@ public class SwitchListFragment extends Fragment implements FragmentManager.OnBa
         return true;
     }
 
-
+    private void disableSwitches()
+    {
+        for (int adapterPos = 0; adapterPos < mSwitchListAdapter.getCount(); ++adapterPos) {
+            mSwitchListAdapter.getItem(adapterPos).setStatus(-1);
+        }
+    }
 
 }

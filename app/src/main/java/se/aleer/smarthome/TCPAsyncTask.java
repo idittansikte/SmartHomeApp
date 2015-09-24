@@ -12,12 +12,13 @@ import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.io.PrintStream;
 import java.net.Socket;
+import java.net.SocketTimeoutException;
 import java.net.UnknownHostException;
 
 public class TCPAsyncTask extends AsyncTask<String, Void, String> {
 
-    String mHost;
-    int mPort;
+    private String mHost;
+    private int mPort;
 
     TCPAsyncTask()
     {
@@ -29,6 +30,7 @@ public class TCPAsyncTask extends AsyncTask<String, Void, String> {
         mHost = host;
         mPort = port;
     }
+
     @Override
     protected String doInBackground(String... params){
         //mSwitchView.setVisibility();
@@ -38,6 +40,7 @@ public class TCPAsyncTask extends AsyncTask<String, Void, String> {
         if(mHost == null || mPort == 0) {
             ipAddress = "192.168.1.151";
             port = 8888;
+            return null;
         }
         else
         {
@@ -47,7 +50,7 @@ public class TCPAsyncTask extends AsyncTask<String, Void, String> {
         try{
             // Create client socket
             Socket socket = new Socket(ipAddress,port);
-            socket.setSoTimeout(20000); // 20 Seconds timeout
+            socket.setSoTimeout(5000); // 5 Seconds timeout
             // Get input stream of the  client socket
             InputStream is = socket.getInputStream();
             // Get output stream of the client socket
@@ -60,6 +63,8 @@ public class TCPAsyncTask extends AsyncTask<String, Void, String> {
             result = br.readLine();
             printStream.close();
             socket.close();
+        } catch (SocketTimeoutException s) {
+            System.out.println("Socket timed out!");
         } catch (NumberFormatException e) {
             e.printStackTrace();
         } catch (UnknownHostException e) {

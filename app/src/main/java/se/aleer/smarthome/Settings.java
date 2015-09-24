@@ -10,6 +10,7 @@ import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
+import android.view.inputmethod.InputMethodManager;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ImageView;
@@ -31,24 +32,22 @@ public class Settings extends AppCompatActivity {
 
     public ViewHolder mHolder;
     Context context;
-    Storage mStorage;
+    StorageSetting mStorageSetting;
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_settings);
         context = this;
+        mStorageSetting = new StorageSetting(this);
         // Enable up button
         assert getSupportActionBar() != null;
         getSupportActionBar().setDisplayHomeAsUpEnabled(true);
-        // If your minSdkVersion is 11 or higher, instead use:
-        // getActionBar().setDisplayHomeAsUpEnabled(true);
 
         LayoutInflater inflater = (LayoutInflater) this
                 .getSystemService(Activity.LAYOUT_INFLATER_SERVICE);
-        View setting_view = inflater.inflate(R.layout.activity_settings, null);
-        mStorage = new Storage();
 
+        // Get all views
         mHolder = new ViewHolder();
         mHolder.url = (EditText) findViewById(R.id.settings_serverURL_field);
         mHolder.port = (EditText) findViewById(R.id.settings_serverPort_field);
@@ -61,7 +60,20 @@ public class Settings extends AppCompatActivity {
         mHolder.failure.setVisibility(View.INVISIBLE);
         mHolder.success.setVisibility(View.INVISIBLE);
         mHolder.progressBar.setVisibility(View.INVISIBLE);
-        mStorage.getSettings(this, mHolder);
+
+        // Set focus listeners for edittext to hide keyboard when focus lost
+        mHolder.url.setOnFocusChangeListener(mFocusListener);
+        mHolder.port.setOnFocusChangeListener(mFocusListener);
+        mHolder.user.setOnFocusChangeListener(mFocusListener);
+        mHolder.password.setOnFocusChangeListener(mFocusListener);
+
+        // Fill views with saved values
+        mHolder.url.setText(mStorageSetting.getString(StorageSetting.PREFS_SERVER_URL));
+        mHolder.port.setText(mStorageSetting.getString(StorageSetting.PREFS_SERVER_PORT));
+        mHolder.user.setText(mStorageSetting.getString(StorageSetting.PREFS_SERVER_USER));
+        mHolder.password.setText(mStorageSetting.getString(StorageSetting.PREFS_SERVER_PASSWORD));
+
+        // Set on click listeners for buttons
         mHolder.test_connnection.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -109,88 +121,33 @@ public class Settings extends AppCompatActivity {
     }
 
     @Override
+    protected void onPause(){
+        super.onPause();
+        // Save settings cuz we may not come back...
+        if(!mHolder.url.getText().toString().isEmpty()) {
+            mStorageSetting.save(StorageSetting.PREFS_SERVER_URL, mHolder.url.getText().toString());
+        }
+        if(!mHolder.port.getText().toString().isEmpty()) {
+            mStorageSetting.save(StorageSetting.PREFS_SERVER_PORT, mHolder.port.getText().toString());
+        }
+        if (!mHolder.user.getText().toString().isEmpty()) {
+            mStorageSetting.save(StorageSetting.PREFS_SERVER_USER, mHolder.user.getText().toString());
+        }
+        if (!mHolder.password.getText().toString().isEmpty()) {
+            mStorageSetting.save(StorageSetting.PREFS_SERVER_PASSWORD, mHolder.password.getText().toString());
+        }
+
+        // Hide keyboard
+        View view = this.getCurrentFocus();
+        hideKeyboard(view);
+    }
+
+    @Override
     protected void onDestroy() {
         super.onDestroy();
-        mStorage.saveSettings(this, mHolder);
     }
 
-    public class HttpAsyncTask extends AsyncTask<String, Integer, Boolean> {
-
-        private String mUrl;
-        private String mUser;
-        private String mPwd;
-        private int mPort;
-
-
-        HttpAsyncTask(String url, int port, String user, String pwd) {
-            mUrl = url;
-            mPort = port;
-            mUser = user;
-            mPwd = pwd;
-        }
-
-
-        @Override
-        protected Boolean doInBackground(String... params) {
-            return isServerAvailable();
-        }
-
-        @Override
-        protected void onPostExecute(Boolean result) {
-            mHolder.progressBar.setVisibility(View.INVISIBLE);
-            mHolder.test_connnection.setEnabled(true);
-            mHolder.test_connnection.setHovered(false);
-            if(result) {
-                mHolder.success.setVisibility(View.VISIBLE);
-            }
-            else{
-                mHolder.failure.setVisibility(View.VISIBLE);
-            }
-
-        }
-
-        public boolean isNetworkAvailable(Context context) {
-            ConnectivityManager cm = (ConnectivityManager) context.getSystemService(Context.CONNECTIVITY_SERVICE);
-            NetworkInfo netInfo = cm.getActiveNetworkInfo();
-            if (netInfo != null && netInfo.isConnectedOrConnecting() && cm.getActiveNetworkInfo().isAvailable() && cm.getActiveNetworkInfo().isConnected()) {
-                return true;
-            } else {
-                return false;
-            }
-        }
-
-        public boolean isServerAvailable() {
-
-            if ( ! isNetworkAvailable(getApplicationContext())) {
-                mHolder.failure.setVisibility(View.VISIBLE);
-                return false;
-            }
-
-            try {
-                String pingCmd = "ping -c 5 " + mUrl;
-                String pingResult = "";
-
-                Runtime r = Runtime.getRuntime();
-                Process p = r.exec(pingCmd);
-                BufferedReader in = new BufferedReader(new InputStreamReader(p.getInputStream()));
-                String inputLine;
-                while ((inputLine = in.readLine()) != null)
-                {
-                    pingResult += inputLine;
-                }
-
-                in.close();
-                Log.d("::::::", pingResult);
-            }
-            catch (Exception e){
-                Log.e("URL ERROR", e.getMessage());
-                return false;
-            }
-            return true;
-        }
-    }
-
-    public class ViewHolder {
+    private class ViewHolder {
         EditText url;
         EditText port;
         EditText user;
@@ -199,22 +156,22 @@ public class Settings extends AppCompatActivity {
         ProgressBar progressBar;
         ImageView success;
         ImageView failure;
+    }
 
-        ViewHolder(){}
-
-        ViewHolder(EditText url, EditText port, EditText user, EditText password){
-            this.url = url;
-            this.port = port;
-            this.user = user;
-            this.password = password;
-        }
-
+    private View.OnFocusChangeListener mFocusListener = new View.OnFocusChangeListener() {
         @Override
-        public String toString() {
-            return "[url=" + ((url == null) ? "" : url.getText().toString()) + "," +
-                    " port=" + ((port == null) ? "" : port.getText().toString()) + "," +
-                    " user=" + ((user == null) ? "" : user.getText().toString()) + "," +
-                    " password=" + ((password == null) ? "" : password.getText().toString()) + "]";
+        public void onFocusChange(View v, boolean hasFocus) {
+            if (!hasFocus) {
+                hideKeyboard(v);
+            }
+        }
+    };
+
+    public void hideKeyboard(View view) {
+        if (view != null)
+        {
+            InputMethodManager inputMethodManager = (InputMethodManager) getSystemService(Activity.INPUT_METHOD_SERVICE);
+            inputMethodManager.hideSoftInputFromWindow(view.getWindowToken(), 0);
         }
     }
 

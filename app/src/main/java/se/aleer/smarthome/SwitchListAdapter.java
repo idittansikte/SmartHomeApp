@@ -74,50 +74,59 @@ public class SwitchListAdapter extends ArrayAdapter<Switch> {
         final ImageButton btn = holder.switchButton;
         // Set curSwitch's state.
         int curSwitchState = curSwitch.getStatus();
-        if(curSwitchState == -1) // Unknown
+        if(curSwitchState == -1)
         {
             Log.d("SLA", "Setting switchState = -1");
-            holder.switchButton.setVisibility(View.INVISIBLE);
-            holder.progressBar.setVisibility(View.VISIBLE);
+            btn.setImageResource(R.drawable.button_white_128);
+            //holder.switchButton.setVisibility(View.INVISIBLE);
+            holder.progressBar.setVisibility(View.INVISIBLE);
         }else if(curSwitchState == 1 || curSwitchState == 0) { // On or off
-            Log.d("SLA", "Setting switchState = 0/1");
+            Log.d("SLA", "Setting switchState = " + curSwitchState);
             holder.switchButton.setVisibility(View.VISIBLE);
             holder.progressBar.setVisibility(View.INVISIBLE);
             if (curSwitchState == 1) { // On
-                btn.setImageResource(R.drawable.button_on_128);
+                btn.setImageResource(R.drawable.button_green_128);
             } else { // Off
-                btn.setImageResource(R.drawable.button_off_128);
+                btn.setImageResource(R.drawable.button_red_128);
             }
         }
         holder.switchButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-
-                TCPAsyncTask tcpClient = new TCPAsyncTask() {
-                    @Override
-                    protected void onPostExecute(String s) {
-                        if (s == null) {
-                            Toast.makeText(mContext, "Server offline?", Toast.LENGTH_SHORT).show();
-                        } else {
-                            Toast.makeText(mContext, s + " " + curSwitch.getId(), Toast.LENGTH_SHORT).show();
-                            if (s.equals("OK")) {
-                                if (curSwitch.getStatus() == 1) {
-                                    btn.setImageResource(R.drawable.button_off_128);
-                                    curSwitch.setStatus(0);
-                                } else if (curSwitch.getStatus() == 0) {
-                                    btn.setImageResource(R.drawable.button_on_128);
-                                    curSwitch.setStatus(1);
+                StorageSetting ss = new StorageSetting(mContext);
+                String port = ss.getString(StorageSetting.PREFS_SERVER_PORT);
+                if (port != null) {
+                    TCPAsyncTask tcpClient = new TCPAsyncTask(ss.getString(StorageSetting.PREFS_SERVER_URL), Integer.parseInt(port)) {
+                        @Override
+                        protected void onPostExecute(String s) {
+                            if (s == null || s.isEmpty()) {
+                                Toast.makeText(mContext, "No response from server...", Toast.LENGTH_SHORT).show();
+                                btn.setImageResource(R.drawable.button_white_128);
+                                curSwitch.setStatus(0);
+                            } else {
+                                Toast.makeText(mContext, s + " " + curSwitch.getId(), Toast.LENGTH_SHORT).show();
+                                if (s.equals("OK")) {
+                                    if (curSwitch.getStatus() == 1) {
+                                        btn.setImageResource(R.drawable.button_red_128);
+                                        curSwitch.setStatus(0);
+                                    } else if (curSwitch.getStatus() == 0) {
+                                        btn.setImageResource(R.drawable.button_green_128);
+                                        curSwitch.setStatus(1);
+                                    }
                                 }
-                            }
 
-                            pgb.setVisibility(View.INVISIBLE);
-                            btn.setVisibility(View.VISIBLE);
+                                pgb.setVisibility(View.INVISIBLE);
+                                //btn.setVisibility(View.VISIBLE);
+                                btn.setActivated(true);
+                            }
                         }
-                    }
-                };
-                btn.setVisibility(View.INVISIBLE);
-                pgb.setVisibility(View.VISIBLE);
-                tcpClient.execute("S:" + curSwitch.getId() + ":" + (curSwitch.getStatus() == 1 ? "0" : "1"));
+                    };
+                    //btn.setVisibility(View.VISIBLE);
+                    btn.setImageResource(R.drawable.button_white_128);
+                    btn.setActivated(false);
+                    pgb.setVisibility(View.VISIBLE);
+                    tcpClient.execute("S:" + curSwitch.getId() + ":" + (curSwitch.getStatus() == 1 ? "0" : "1"));
+                }
             }
         });
 

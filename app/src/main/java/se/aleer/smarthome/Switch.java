@@ -12,13 +12,16 @@ public class Switch {
     private int mId;
     private int mController;
     private String mName;
-    private int on;
+    private int mStatus;
     private int mProtocol;
     private boolean mSingle;
     private List<Integer> mMultiSwitchArray;
 
-    public Switch(){
+    public Switch(){ // This is called when loaded from memory for some reason?
         super();
+        this.mStatus = -1;
+        this.mProtocol = 1;
+        this.mSingle = true;
     }
 
     public Switch(int id, int controller, String name)
@@ -26,8 +29,9 @@ public class Switch {
         this.mId = id;
         this.mController = controller;
         this.mName = name;
-        this.on = -1;
+        this.mStatus = -1;
         this.mProtocol = 1;
+        this.mSingle = true;
     }
 
     public boolean isSingle() {return mSingle; }
@@ -35,11 +39,11 @@ public class Switch {
 
     public int getStatus()
     {
-        return on;
+        return mStatus;
     }
     public void setStatus(int state)
     {
-        on = state;
+        mStatus = state;
     }
 
     public int getId(){ return mId; }

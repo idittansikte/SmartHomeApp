@@ -16,7 +16,6 @@ public class Storage {
 
     public static final String PREFS_NAME = "SMARTHOME_APP";
     public static final String SWITCHES = "SWITCHES";
-    public static final String SETTINGS = "SWITCHES";
 
     public Storage(){
         super();
@@ -55,46 +54,6 @@ public class Storage {
             return null;
 
         return (ArrayList<Switch>) favorites;
-    }
-
-    public void saveSettings (Context context, Settings.ViewHolder holder){
-        if (holder != null) {
-            SharedPreferences settings;
-            Editor editor;
-
-            settings = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
-            editor = settings.edit();
-
-            editor.putString("settings_url", holder.url.getText().toString());
-            editor.putString("settings_port", holder.port.getText().toString());
-            editor.putString("settings_user", holder.user.getText().toString());
-            editor.putString("settings_password", holder.password.getText().toString());
-            editor.apply();
-        }
-    }
-
-
-    public Settings.ViewHolder getSettings(Context context, Settings.ViewHolder holder){
-        SharedPreferences settings;
-        Settings.ViewHolder favorites;
-
-        settings = context.getSharedPreferences(PREFS_NAME,
-                Context.MODE_PRIVATE);
-
-        if (settings.contains("settings_url")) {
-            holder.url.setText(settings.getString("settings_url", null));
-        }
-        if (settings.contains("settings_port")) {
-            holder.port.setText(settings.getString("settings_port", null));
-        }
-        if (settings.contains("settings_user")) {
-            holder.user.setText(settings.getString("settings_user", null));
-        }
-        if (settings.contains("settings_password")) {
-            holder.password.setText(settings.getString("settings_password", null));
-        }
-
-        return holder;
     }
 
     public void addSwitch(Context context, Switch swtch){

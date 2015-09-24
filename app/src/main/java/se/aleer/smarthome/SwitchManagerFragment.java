@@ -3,7 +3,7 @@ package se.aleer.smarthome;
 import android.app.Activity;
 import android.content.res.Resources;
 import android.os.Bundle;
-import android.app.Fragment;
+import android.support.v4.app.Fragment;
 import android.util.Log;
 import android.view.Gravity;
 import android.view.LayoutInflater;
@@ -12,6 +12,7 @@ import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.inputmethod.InputMethodManager;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.EditText;
@@ -27,6 +28,15 @@ public class SwitchManagerFragment extends Fragment {
     private Switch mSwitch;
     OnManagedSwitchListener mCallback;
     ViewHolder mViewHolder;
+
+    private View.OnFocusChangeListener mFocusListener = new View.OnFocusChangeListener() {
+        @Override
+        public void onFocusChange(View v, boolean hasFocus) {
+            if (!hasFocus) {
+                hideKeyboard(v);
+            }
+        }
+    };
 
     private class ViewHolder
     {
@@ -75,9 +85,9 @@ public class SwitchManagerFragment extends Fragment {
     @Override
     public void onPause(){
         super.onPause();
-        /*getActivity().getFragmentManager().beginTransaction().remove(this).commit();
-        super.onDestroy();
-        mSwitch = null;*/
+        // Hide keyboard
+        View view = getActivity().getCurrentFocus();
+        hideKeyboard(view);
     }
 
     @Override
@@ -116,7 +126,8 @@ public class SwitchManagerFragment extends Fragment {
         setupRadioButtons(view);
 
         mViewHolder.nameView = (EditText) view.findViewById(R.id.S_M_F_name_edit);
-
+        // Hide keyboard when focus lost TODO: Remember to add this when more is added to app
+        mViewHolder.nameView.setOnFocusChangeListener(mFocusListener);
         // If switch is set, set the rest of the fields
         if(mSwitch != null)
         {
@@ -250,6 +261,14 @@ public class SwitchManagerFragment extends Fragment {
         }
         else{ // If multi-switch
             mSwitch.setSingle(false);
+        }
+    }
+
+    public void hideKeyboard(View view) {
+        if (view != null)
+        {
+            InputMethodManager inputMethodManager = (InputMethodManager) getActivity().getSystemService(Activity.INPUT_METHOD_SERVICE);
+            inputMethodManager.hideSoftInputFromWindow(view.getWindowToken(), 0);
         }
     }
 }
