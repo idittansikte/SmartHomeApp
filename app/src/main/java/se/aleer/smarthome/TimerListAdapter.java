@@ -2,24 +2,21 @@ package se.aleer.smarthome;
 
 import android.app.Activity;
 import android.content.Context;
-import android.content.DialogInterface;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ArrayAdapter;
-import android.widget.TextClock;
 import android.widget.TextView;
-
-import java.text.DateFormat;
-import java.util.HashMap;
 import java.util.List;
 
 public class TimerListAdapter extends ArrayAdapter<Timer> {
     private Context context;
     customTextTimeListener mCustomTextTimeListener;
+    public static Boolean TIME_ON = true;
+    public static Boolean TIME_OFF = false;
 
     public interface customTextTimeListener {
-        void onEditTimeListener(int position,Boolean on);
+        void onEditTimeListener(int position, Boolean what);
     }
 
     public void setCustomTextTimeListener(customTextTimeListener listener) {
@@ -36,13 +33,13 @@ public class TimerListAdapter extends ArrayAdapter<Timer> {
      */
     private class ViewHolder{
         public TextView titleText;
-        public TextClock clockOn;
-        public TextClock clockOff;
+        public TextView clockOn;
+        public TextView clockOff;
 
         public ViewHolder(View view){
             this.titleText = (TextView) view.findViewById(R.id.timer_list_single_title);
-            this.clockOn = (TextClock) view.findViewById(R.id.timer_list_single_time_on);
-            this.clockOff = (TextClock) view.findViewById(R.id.timer_list_single_time_off);
+            this.clockOn = (TextView) view.findViewById(R.id.timer_list_single_time_on);
+            this.clockOff = (TextView) view.findViewById(R.id.timer_list_single_time_off);
         }
     }
 
@@ -54,7 +51,7 @@ public class TimerListAdapter extends ArrayAdapter<Timer> {
      * @return
      */
     public View getView(final int position, View convertView, ViewGroup parent) {
-        ViewHolder holder;
+        final ViewHolder holder;
         View mViewToUse = convertView;
         // This block exists to inflate the settings list item conditionally based on whether
         // we want to support a grid or list view.
@@ -70,25 +67,40 @@ public class TimerListAdapter extends ArrayAdapter<Timer> {
         }
         Timer item = (Timer)getItem(position);
         holder.titleText.setText(item.getTitle());
-        holder.clockOn.setText(item.getTimeOn());
-        holder.clockOn.setText(item.getTimeOff());
+        String onHour = "";
+        String onMinute = "";
+        String offHour = "";
+        String offMinute = "";
+        if(item.getTimeOnHour() < 10)
+            onHour += "0";
+        onHour += item.getTimeOnHour();
+        if(item.getTimeOnMin() < 10)
+            onMinute += "0";
+        onMinute += item.getTimeOnMin();
+        if(item.getTimeOffHour() < 10)
+            offHour += "0";
+        offHour += item.getTimeOffHour();
+        if(item.getTimeOffMin() < 10)
+            offMinute += "0";
+        offMinute += item.getTimeOffMin();
 
-        holder.clockOn.setOnLongClickListener(new View.OnLongClickListener() {
+        holder.clockOn.setText(onHour + ":" + onMinute);
+        holder.clockOff.setText(offHour+ ":" + offMinute);
+
+        holder.clockOn.setOnClickListener(new View.OnClickListener() {
             @Override
-            public boolean onLongClick(View v) {
+            public void onClick(View v) {
                 if (mCustomTextTimeListener != null) {
-                    mCustomTextTimeListener.onEditTimeListener(position, true);
+                    mCustomTextTimeListener.onEditTimeListener(position, TIME_ON);
                 }
-                return true;
             }
         });
-        holder.clockOff.setOnLongClickListener(new View.OnLongClickListener() {
+        holder.clockOff.setOnClickListener(new View.OnClickListener() {
             @Override
-            public boolean onLongClick(View v) {
+            public void onClick(View v) {
                 if (mCustomTextTimeListener != null) {
-                    mCustomTextTimeListener.onEditTimeListener(position, true);
+                    mCustomTextTimeListener.onEditTimeListener(position, TIME_OFF);
                 }
-                return true;
             }
         });
 

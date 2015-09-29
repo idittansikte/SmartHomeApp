@@ -18,7 +18,7 @@ public class SwitchListAdapter extends ArrayAdapter<Switch> {
 
     private Context mContext;
     List<Switch> mSwitches;
-    Storage mStorage;
+    StorageSwitches mStorageSwitches;
     public SwitchListAdapter(Context context, List<Switch> switches){
         super(context, R.layout.list_single, switches);
         mContext = context;

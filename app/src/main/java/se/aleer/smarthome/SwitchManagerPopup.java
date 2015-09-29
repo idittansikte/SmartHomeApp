@@ -54,7 +54,7 @@ public class SwitchManagerPopup {
                 @Override
                 public void onClick(View v) {
                     mExistingSwitch.setName(mEdit.getText().toString());
-                    mSwitchListFragment.updateSwitch(mExistingSwitch, mPosition);
+                    //mSwitchListFragment.updateSwitch(mExistingSwitch, mPosition);
                     mPopupWindow.dismiss();
                 }
             });

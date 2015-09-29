@@ -1,6 +1,8 @@
 package se.aleer.smarthome;
 
 import android.app.Activity;
+import android.content.Intent;
+import android.support.v4.app.DialogFragment;
 import android.content.res.Resources;
 import android.os.Bundle;
 import android.support.v4.app.Fragment;
@@ -15,19 +17,34 @@ import android.view.ViewGroup;
 import android.view.inputmethod.InputMethodManager;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
+import android.widget.Button;
 import android.widget.EditText;
 import android.widget.RadioButton;
 import android.widget.RelativeLayout;
 import android.widget.Spinner;
 import android.widget.Toast;
 
-public class SwitchManagerFragment extends Fragment {
+import com.google.gson.Gson;
 
+public class SwitchManagerFragment extends DialogFragment {
+    final static public int REQUEST_CODE_ADD = 1;
+    final static public int REQUEST_CODE_DELETE = 2;
+    final static public String SWITCH_BUNDLE_KEY = "KEY_SWITCH";
     final private String TAG = "SwitchManagerFragment";
     public static final String ARG_ITEM_ID = "SWITCH_MANAGER";
     private Switch mSwitch;
-    OnManagedSwitchListener mCallback;
+    //OnManagedSwitchListener mCallback;
     ViewHolder mViewHolder;
+
+    private SwitchManagerListener mCallback;
+
+    public interface SwitchManagerListener{
+        void onFinishSwitchManaging(Timer timer);
+    }
+
+    public void setManagerListener(SwitchManagerListener listener) {
+        this.mCallback = listener;
+    }
 
     private View.OnFocusChangeListener mFocusListener = new View.OnFocusChangeListener() {
         @Override
@@ -44,22 +61,16 @@ public class SwitchManagerFragment extends Fragment {
         RadioButton radioButton_multi;
         Spinner spinner;
         EditText nameView;
-    }
+        Button save;
+        Button remove;
 
-    public interface OnManagedSwitchListener {
-        void onManagedSwitch(Switch swtch, boolean remove);
-    }
-    @Override
-    public void onAttach(Activity activity)
-    {
-        super.onAttach(activity);
-        // This makes sure that the container activity has implemented
-        // the callback interface. If not, it throws an exception
-        try {
-            mCallback = (OnManagedSwitchListener) activity;
-        } catch (ClassCastException e) {
-            throw new ClassCastException(activity.toString()
-                    + " must implement OnEditSwitchListener");
+        ViewHolder(View view){
+            this.radioButton_single = (RadioButton) view.findViewById(R.id.radioButton_single);
+            this.radioButton_multi = (RadioButton) view.findViewById(R.id.radioButton_multi);
+            this.spinner = (Spinner) view.findViewById(R.id.S_M_F_protocol_spinner);
+            this.nameView = (EditText) view.findViewById(R.id.S_M_F_name_edit);
+            this.save = (Button) view.findViewById(R.id.save_button);
+            this.remove = (Button) view.findViewById(R.id.remove_button);
         }
     }
 
@@ -71,7 +82,7 @@ public class SwitchManagerFragment extends Fragment {
 
     public SwitchManagerFragment()
     {
-        mViewHolder = new ViewHolder();
+        //mViewHolder = new ViewHolder();
         mSwitch = null;
     }
 
@@ -80,6 +91,14 @@ public class SwitchManagerFragment extends Fragment {
         super.onCreate(savedInstanceState);
         setHasOptionsMenu(true);
         ((RemoteControl)getActivity()).showUpButton();
+        Bundle b = getArguments();
+        if (b != null){
+            String gsonString = b.getString("Switch");
+            if (gsonString != null){
+                Gson gson = new Gson();
+                setSwitch(gson.fromJson(gsonString, Switch.class));
+            }
+        }
     }
 
     @Override
@@ -102,18 +121,30 @@ public class SwitchManagerFragment extends Fragment {
     public boolean onOptionsItemSelected(MenuItem item){
         switch (item.getItemId()) {
             case R.id.action_remove_switch:
-                mCallback.onManagedSwitch(mSwitch, true);
+                sendResult(REQUEST_CODE_DELETE);
                 return true;
             case R.id.action_save_switch:
                 if(mSwitch == null){
                     mSwitch = new Switch();
                 }
                 populateSwitch();
-                mCallback.onManagedSwitch(mSwitch, false);
+                sendResult(REQUEST_CODE_DELETE);
                 return true;
             default:
                 return super.onOptionsItemSelected(item);
         }
+    }
+
+    private void sendResult(int REQUEST_CODE) {
+        String jsonString = "";
+        if (mSwitch != null) {
+            Gson gson = new Gson();
+            jsonString = gson.toJson(mSwitch);
+        }
+        Intent intent = new Intent();
+        intent.putExtra(SWITCH_BUNDLE_KEY, jsonString);
+        getTargetFragment().onActivityResult(getTargetRequestCode(), REQUEST_CODE, intent);
+        dismiss();
     }
 
     @Override
@@ -121,11 +152,10 @@ public class SwitchManagerFragment extends Fragment {
                              Bundle savedInstanceState) {
         View view = inflater.inflate(R.layout.fragment_switch_manager, container,
                 false);
-
+        mViewHolder = new ViewHolder(view);
         setupProtocolSpinner(view);
         setupRadioButtons(view);
 
-        mViewHolder.nameView = (EditText) view.findViewById(R.id.S_M_F_name_edit);
         // Hide keyboard when focus lost TODO: Remember to add this when more is added to app
         mViewHolder.nameView.setOnFocusChangeListener(mFocusListener);
         // If switch is set, set the rest of the fields
@@ -135,13 +165,31 @@ public class SwitchManagerFragment extends Fragment {
             // Set name
             mViewHolder.nameView.setText(mSwitch.getName());
         }
+
+        mViewHolder.remove.setOnClickListener(new View.OnClickListener(){
+            @Override
+            public void onClick(View v) {
+                sendResult(REQUEST_CODE_DELETE);
+            }
+        });
+
+        mViewHolder.save.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                if (mSwitch == null) {
+                    mSwitch = new Switch();
+                }
+                populateSwitch();
+                sendResult(REQUEST_CODE_ADD);
+            }
+        });
+
         return view;
     }
 
     private void setupProtocolSpinner(View view)
     {
         // ### Populate spinner ###
-        mViewHolder.spinner = (Spinner) view.findViewById(R.id.S_M_F_protocol_spinner);
         // Create a spinner adapter using protocol array ad default spinner layout (android)
         ArrayAdapter<CharSequence> spinnerAdapter = ArrayAdapter.createFromResource(getActivity(), R.array.protocol_array, R.layout.spinner);
         // Specify the layout to use when the list of choices appears
@@ -188,8 +236,6 @@ public class SwitchManagerFragment extends Fragment {
     {
 
         // ### Make radioButtons for switch-type work ###
-        mViewHolder.radioButton_single = (RadioButton) view.findViewById(R.id.radioButton_single);
-        mViewHolder.radioButton_multi = (RadioButton) view.findViewById(R.id.radioButton_multi);
         final RelativeLayout singleLayout = ((RelativeLayout) view.findViewById(R.id.S_M_F_type_single));
         final RelativeLayout multiLayout = ((RelativeLayout) view.findViewById(R.id.S_M_F_type_multi));
         // Initialize them

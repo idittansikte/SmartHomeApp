@@ -15,13 +15,11 @@ public class Switch {
     private int mStatus;
     private int mProtocol;
     private boolean mSingle;
+    private int mTimerId;
     private List<Integer> mMultiSwitchArray;
 
     public Switch(){ // This is called when loaded from memory for some reason?
-        super();
-        this.mStatus = -1;
-        this.mProtocol = 1;
-        this.mSingle = true;
+        this(-1, -1, "No name");
     }
 
     public Switch(int id, int controller, String name)
@@ -32,10 +30,25 @@ public class Switch {
         this.mStatus = -1;
         this.mProtocol = 1;
         this.mSingle = true;
+        this.mTimerId=-1;
+    }
+
+    public Switch(int id, String name)
+    {
+        this(id, -1, name);
     }
 
     public boolean isSingle() {return mSingle; }
     public void setSingle(boolean single) { mSingle = single; }
+
+    public int getTimerId()
+    {
+        return mTimerId;
+    }
+    public void setTimerId(int timerId)
+    {
+        mTimerId = timerId;
+    }
 
     public int getStatus()
     {

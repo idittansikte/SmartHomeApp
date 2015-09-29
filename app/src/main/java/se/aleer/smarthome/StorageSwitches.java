@@ -12,12 +12,12 @@ import java.util.Set;
 
 import com.google.gson.Gson;
 
-public class Storage {
+public class StorageSwitches {
 
     public static final String PREFS_NAME = "SMARTHOME_APP";
     public static final String SWITCHES = "SWITCHES";
 
-    public Storage(){
+    public StorageSwitches(){
         super();
     }
 
@@ -54,23 +54,5 @@ public class Storage {
             return null;
 
         return (ArrayList<Switch>) favorites;
-    }
-
-    public void addSwitch(Context context, Switch swtch){
-        List<Switch> switches = getSwitchList(context);
-        if (switches == null){
-            switches = new ArrayList<Switch>();
-        }
-        switches.add(swtch);
-        saveSwitchList(context, switches);
-    }
-
-    public void removeSwitch(Context context, Switch swtch){
-        ArrayList<Switch> switches = getSwitchList(context);
-        if(switches != null){
-            switches.remove(swtch);
-            saveSwitchList(context, switches);
-        }
-
     }
 }

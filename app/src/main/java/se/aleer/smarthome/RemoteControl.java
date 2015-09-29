@@ -13,7 +13,7 @@ import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 
-public class RemoteControl extends AppCompatActivity implements SwitchListFragment.OnEditSwitchListener, SwitchManagerFragment.OnManagedSwitchListener {
+public class RemoteControl extends AppCompatActivity implements SwitchListFragment.OnEditSwitchListener {
 
     private static final String TAG = "RemoteControl";
 
@@ -77,6 +77,8 @@ public class RemoteControl extends AppCompatActivity implements SwitchListFragme
 */
         // Get the ViewPager and set it's PagerAdapter so that it can display items
         ViewPager viewPager = (ViewPager) findViewById(R.id.viewpager);
+        //viewPager.setPageMargin(20);
+        //viewPager.setPageMarginDrawable(R.color.black);
         mAdapterViewPager = new MyFragmentPagerAdapter(getSupportFragmentManager(), RemoteControl.this);
         viewPager.setAdapter(mAdapterViewPager);
         // Give the TabLayout the ViewPager

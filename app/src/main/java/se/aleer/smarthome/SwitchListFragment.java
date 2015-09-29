@@ -1,11 +1,8 @@
 package se.aleer.smarthome;
 
 import android.app.Activity;
-import android.app.AlertDialog;
-import android.app.FragmentManager;
-import android.app.FragmentTransaction;
+import android.support.v4.app.FragmentManager;
 import android.content.Context;
-import android.content.DialogInterface;
 import android.content.Intent;
 import android.os.Bundle;
 import android.support.v4.app.Fragment;
@@ -19,23 +16,27 @@ import android.view.ViewGroup;
 import android.widget.Toast;
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.TreeSet;
 import android.os.Handler;
+
+import com.google.gson.Gson;
 
 import se.aleer.smarthome.drag_sort_listview.DragSortController;
 import se.aleer.smarthome.drag_sort_listview.DragSortListView;
 
 public class SwitchListFragment extends Fragment implements FragmentManager.OnBackStackChangedListener {
 
+    // Some random code that is sent to switch manager and get back.
+    private int REQUEST_CODE = 134;
+
     private String mTitle; // Tab title set by adapter when creating instance
     private int mPage; // FragmentAdapter using this to keep track of tabs/fragments
 
     public static final String ARG_ITEM_ID = "favorite_list";
     private String TAG = "SwitchListFragment";
-    private Storage mStorage;
+    private StorageSwitches mStorageSwitches;
     private Activity mActivity;
     List<Switch> mSwitches;
     private DragSortListView mDragSortListView;
@@ -57,15 +58,13 @@ public class SwitchListFragment extends Fragment implements FragmentManager.OnBa
     }
 
     // Handles events from SwitchManagerFragment
-    public void manageManagedSwitch(Switch swtch, boolean remove)
-    {
-        if(remove){
+    public void manageManagedSwitch(Switch swtch, boolean remove) {
+        if (remove) {
             deleteSwitch(swtch);
-        }
-        else{
+        } else {
             if (mSwitchListAdapter.contains(swtch.getId()))
-                updateSwitch(swtch, 333);
-            else{
+                updateSwitch(swtch);
+            else {
                 swtch.setId(getUniqueId());
                 add(swtch);
             }
@@ -74,15 +73,14 @@ public class SwitchListFragment extends Fragment implements FragmentManager.OnBa
     }
 
     @Override
-    public void onAttach(Activity activity)
-    {
-        super.onAttach(activity);
+    public void onAttach(Context context) {
+        super.onAttach(context);
         // This makes sure that the container activity has implemented
         // the callback interface. If not, it throws an exception
         try {
-            mCallback = (OnEditSwitchListener) activity;
+            mCallback = (OnEditSwitchListener) context;
         } catch (ClassCastException e) {
-            throw new ClassCastException(activity.toString()
+            throw new ClassCastException(context.toString()
                     + " must implement OnEditSwitchListener");
         }
 
@@ -97,18 +95,18 @@ public class SwitchListFragment extends Fragment implements FragmentManager.OnBa
 
         @Override
         public void drop(int from, int to) {
-            if (from != to)
-            {
+            if (from != to) {
                 Switch item = mSwitchListAdapter.getItem(from);
                 mSwitchListAdapter.remove(item);
                 mSwitchListAdapter.insert(item, to);
-                mStorage.saveSwitchList(mActivity, mSwitches);
+                mStorageSwitches.saveSwitchList(mActivity, mSwitches);
                 Toast.makeText(mActivity, "mSwitchList: " + mSwitchListAdapter.getCount(), Toast.LENGTH_SHORT).show();
-            }else{ // If dropped ad the same position activate switch-edit
+            } else { // If dropped ad the same position activate switch-edit
                 Switch s = mSwitchListAdapter.getItem(from);
                 if (s != null)
                     Log.d(TAG, "Switch is not null");
-                mCallback.onEditSwitch(mSwitchListAdapter.getItem(from));
+                //mCallback.onEditSwitch(mSwitchListAdapter.getItem(from));
+                showManagerDialog(mSwitchListAdapter.getItem(from));
                 /*SwitchManagerPopup popup = new SwitchManagerPopup(mActivity, yo);
                 popup.setSwitch(mSwitchListAdapter.getItem(from), from);
                 popup.initiatePopup();*/
@@ -123,7 +121,6 @@ public class SwitchListFragment extends Fragment implements FragmentManager.OnBa
         }
     };
 
-    final Context c = this.getActivity();
     // Update SwitchListAdapter in interval
     final Runnable mRunnable = new Runnable() {
         @Override
@@ -134,6 +131,7 @@ public class SwitchListFragment extends Fragment implements FragmentManager.OnBa
             if (port != null) {
                 TCPAsyncTask getStatusArduino = new TCPAsyncTask(ss.getString(StorageSetting.PREFS_SERVER_URL),
                         Integer.parseInt(port)) {
+                    // TODO: Disable this when waiting for remove/add/switch...
                     @Override
                     protected void onPostExecute(String s) {
                         //Toast.makeText(mActivity, "Updating...", Toast.LENGTH_SHORT).show();
@@ -155,18 +153,18 @@ public class SwitchListFragment extends Fragment implements FragmentManager.OnBa
         mTitle = getArguments().getString("title");
 
         mActivity = getActivity();
-        mStorage = new Storage();
+        mStorageSwitches = new StorageSwitches();
         setHasOptionsMenu(true);
-        getActivity().getFragmentManager().addOnBackStackChangedListener(this);
+        //getActivity().getFragmentManager().addOnBackStackChangedListener(this);
         // Show back button in menu
-        ((RemoteControl)getActivity()).hideUpButton();
+        ((RemoteControl) getActivity()).hideUpButton();
     }
 
 
     public void onBackStackChanged() {
         // enable Up button only if there are entries on the back stack
-        if(getActivity().getFragmentManager().getBackStackEntryCount() < 1) {
-            ((RemoteControl)getActivity()).hideUpButton();
+        if (getActivity().getFragmentManager().getBackStackEntryCount() < 1) {
+            ((RemoteControl) getActivity()).hideUpButton();
         }
     }
 
@@ -179,19 +177,21 @@ public class SwitchListFragment extends Fragment implements FragmentManager.OnBa
     }
 
     @Override
-    public void onDestroy(){
+    public void onDestroy() {
         super.onDestroy();
         //mHandler.removeCallbacks(mRunnable);
     }
 
     @Override
-    public void onPause(){
+    public void onPause() {
         super.onPause();
         mHandler.removeCallbacks(mRunnable);
+        // Save switch list, we may not come back...
+        mStorageSwitches.saveSwitchList(mActivity, mSwitches);
     }
 
     @Override
-    public void onStop(){
+    public void onStop() {
         super.onStop();
         //mHandler.removeCallbacks(mRunnable);
     }
@@ -214,7 +214,8 @@ public class SwitchListFragment extends Fragment implements FragmentManager.OnBa
                 startActivity(intent);
                 return true;
             case R.id.action_add_switch:
-                mCallback.onEditSwitch(null);
+                showManagerDialog(null);
+                //mCallback.onEditSwitch(null);
                 return true;
             default:
                 return super.onOptionsItemSelected(item);
@@ -230,37 +231,37 @@ public class SwitchListFragment extends Fragment implements FragmentManager.OnBa
 
         mDragSortListView = (DragSortListView) view.findViewById(R.id.listview);
 
-        mSwitches = mStorage.getSwitchList(mActivity);
+        mSwitches = mStorageSwitches.getSwitchList(mActivity);
 
-        if ( mSwitches == null ){
+        if (mSwitches == null) {
             mSwitches = new ArrayList<Switch>();
-            mStorage.saveSwitchList(mActivity, mSwitches);
+            mStorageSwitches.saveSwitchList(mActivity, mSwitches);
         }
-            if(mSwitches.size() == 0){
-                new Alerter(mActivity).showAlert(getResources().getString(R.string.empty_switch_list_title),
-                        getResources().getString(R.string.empty_switch_list_msg));
-            }
-            mSwitchListAdapter = new SwitchListAdapter(mActivity, mSwitches);
-            mDragSortListView.setAdapter(mSwitchListAdapter);
+        if (mSwitches.size() == 0) {
+            new Alerter(mActivity).showAlert(getResources().getString(R.string.empty_switch_list_title),
+                    getResources().getString(R.string.empty_switch_list_msg));
+        }
+        mSwitchListAdapter = new SwitchListAdapter(mActivity, mSwitches);
+        mDragSortListView.setAdapter(mSwitchListAdapter);
 
-            //mDragSortListView.setDropListener(onDrop);
-            //mDragSortListView.setRemoveListener(onRemove);
-            mDragSortListView.setDragSortListener(dragSortListener);
+        //mDragSortListView.setDropListener(onDrop);
+        //mDragSortListView.setRemoveListener(onRemove);
+        mDragSortListView.setDragSortListener(dragSortListener);
 
-            DragSortController controller = new DragSortController(mDragSortListView);
-            controller.setDragHandleId(R.id.single_list_head);
+        DragSortController controller = new DragSortController(mDragSortListView);
+        controller.setDragHandleId(R.id.single_list_head);
 
-            //controller.setClickRemoveId(R.id.);
-            controller.setRemoveEnabled(false);
-            //controller.setSortEnabled(true);
-            controller.setDragInitMode(2);
+        //controller.setClickRemoveId(R.id.);
+        controller.setRemoveEnabled(false);
+        //controller.setSortEnabled(true);
+        controller.setDragInitMode(2);
 
-            mDragSortListView.setFloatViewManager(controller);
-            mDragSortListView.setOnTouchListener(controller);
-            mDragSortListView.setDragEnabled(true);
+        mDragSortListView.setFloatViewManager(controller);
+        mDragSortListView.setOnTouchListener(controller);
+        mDragSortListView.setDragEnabled(true);
 
         // Get and set status for all switches...
-        StorageSetting storageSetting = new StorageSetting(getActivity());
+        /*StorageSetting storageSetting = new StorageSetting(getActivity());
         String port = storageSetting.getString(StorageSetting.PREFS_SERVER_PORT);
         if (port != null) {
             TCPAsyncTask getStatusArduino = new TCPAsyncTask(storageSetting.getString(StorageSetting.PREFS_SERVER_URL), Integer.parseInt(port)) {
@@ -271,7 +272,7 @@ public class SwitchListFragment extends Fragment implements FragmentManager.OnBa
                     for (int adapterPos = 0; adapterPos < mSwitchListAdapter.getCount(); ++adapterPos) {
                         Switch sw = mSwitchListAdapter.getItem(adapterPos);
                         mSwitchListAdapter.setItemStatus(adapterPos, 0);
-                    }*/
+                    }*//*
 
                     }
                     // Update switch-list
@@ -280,92 +281,108 @@ public class SwitchListFragment extends Fragment implements FragmentManager.OnBa
 
             };
             getStatusArduino.execute("G");
-        }
+        }*/
         return view;
     }
 
-    public void add(String name, int controller, int status)
-    {
+    public void add(String name, int controller, int status) {
         Switch swtch = new Switch(controller, 0, name);
         swtch.setStatus(status);
         add(swtch);
     }
 
-    public void add(Switch swtch){
-        mSwitchListAdapter.add(swtch);
-        mStorage.addSwitch(mActivity, swtch);
+    public void add(Switch swtch) {
+        final Switch sw = swtch; // TODO: Make some queue or something
+        // Stop fetching...
+        mHandler.removeCallbacks(mRunnable);
+        // Send update to server
+        StorageSetting ss = new StorageSetting(getActivity());
+        String port = ss.getString(StorageSetting.PREFS_SERVER_PORT);
+        if (port != null) {
+            TCPAsyncTask tcpClient = new TCPAsyncTask(ss.getString(StorageSetting.PREFS_SERVER_URL),
+                    Integer.parseInt(port)) {
+                @Override
+                protected void onPostExecute(String s) {
 
-        TCPAsyncTask tcpClient = new TCPAsyncTask() {
-            @Override
-            protected void onPostExecute(String s) {
+                    if (s == null) {
+                        Toast.makeText(mActivity, R.string.no_response_from_server, Toast.LENGTH_LONG).show();
+                        return;
+                    }
 
-                if ( s == null ){
-                    Toast.makeText(mActivity, "Could not add switch to server, null error", Toast.LENGTH_SHORT).show();
-                    return;
+                    if (s.equals("OK")) {
+                        // If all ok we add switch...
+                        mSwitchListAdapter.add(sw);
+                        Toast.makeText(mActivity, "Switch successfully added to server", Toast.LENGTH_SHORT).show();
+                    } else if (s.equals("NOK")) {
+                        Toast.makeText(mActivity, R.string.server_cache_full, Toast.LENGTH_LONG).show();
+                    }
+                    // Continue fetching
+                    mRunnable.run();
                 }
-
-                if(s.equals("OK")){
-                    Toast.makeText(mActivity, "Switch successfully added to server", Toast.LENGTH_SHORT).show();
-                }
-                else if(s.equals("NOK")){
-                    Toast.makeText(mActivity, "Add error at server", Toast.LENGTH_SHORT).show();
-                }
-                else {
-                    Toast.makeText(mActivity, "Server error", Toast.LENGTH_SHORT).show();
-                }
-            }
-        };
-        // Send remove command;
-        tcpClient.execute("A:" + swtch.getId());
+            };
+            // Send remove command;
+            tcpClient.execute("A:" + swtch.getId());
+        }else {
+            Toast.makeText(mActivity, R.string.no_server_configuration, Toast.LENGTH_LONG).show();
+        }
     }
+
     public void add(String name) {
         Switch swtch = new Switch(getUniqueId(), 0, name);
         swtch.setStatus(0);
         add(swtch);
     }
 
-    public void updateSwitch(Switch swtch, int position){
+    public void updateSwitch(Switch swtch) {
         int pos = mSwitchListAdapter.getPosition(swtch);
         mSwitchListAdapter.remove(swtch);
         mSwitchListAdapter.insert(swtch, pos);
-        mStorage.saveSwitchList(mActivity, mSwitches);
+        mStorageSwitches.saveSwitchList(mActivity, mSwitches);
     }
 
-    public void deleteSwitch(Switch swtch){
-        mSwitchListAdapter.remove(swtch);
-        mStorage.saveSwitchList(mActivity, mSwitches);
-        TCPAsyncTask tcpClient = new TCPAsyncTask() {
-            @Override
-            protected void onPostExecute(String s) {
+    public void deleteSwitch(Switch swtch) {
+        final Switch sw = swtch;
+        // Stop fetching...
+        mHandler.removeCallbacks(mRunnable);
+        mSwitchListAdapter.remove(sw);
+        // Get server config and send request...
+        StorageSetting ss = new StorageSetting(getActivity());
+        String port = ss.getString(StorageSetting.PREFS_SERVER_PORT);
+        if (port != null) {
+            TCPAsyncTask tcpClient = new TCPAsyncTask(ss.getString(StorageSetting.PREFS_SERVER_URL),
+                    Integer.parseInt(port)) {
+                @Override
+                protected void onPostExecute(String s) {
 
-                if ( s == null ){
-                    Toast.makeText(mActivity, "Could not remove switch at server, null error", Toast.LENGTH_SHORT).show();
-                    return;
-                }
+                    if (s == null) {
+                        Toast.makeText(mActivity, R.string.no_response_from_server, Toast.LENGTH_LONG).show();
+                        return;
+                    }
 
-                if(s.equals("OK")){
-                    Toast.makeText(mActivity, "Switch removed successfully", Toast.LENGTH_SHORT).show();
+                    if (s.equals("OK")) {
+                        Toast.makeText(mActivity, "Switch removed successfully", Toast.LENGTH_LONG).show();
+                    } else if (s.equals("NOK")) {
+                        Toast.makeText(mActivity, R.string.no_such_switch_at_server, Toast.LENGTH_SHORT).show();
+                    }
+                    // Continue fetching
+                    mRunnable.run();
                 }
-                else if(s.equals("NOK")){
-                    Toast.makeText(mActivity, "Remove error at server", Toast.LENGTH_SHORT).show();
-                }
-                else {
-                    Toast.makeText(mActivity, "Unknown error", Toast.LENGTH_SHORT).show();
-                }
-            }
-        };
+            };
         // Send remove command;
         tcpClient.execute("R:" + swtch.getId());
+        }else{
+            Toast.makeText(mActivity, R.string.no_server_configuration, Toast.LENGTH_LONG).show();
+        }
     }
 
-    private int getUniqueId(){
+    private int getUniqueId() {
         int id = 10;
         TreeSet<Integer> takenIds = new TreeSet<>();
-        for (Switch i : mSwitches){
+        for (Switch i : mSwitches) {
             takenIds.add(i.getId());
         }
-        while(true){
-            if ( ! takenIds.contains(id) ){
+        while (true) {
+            if (!takenIds.contains(id)) {
                 return id;
             }
             ++id;
@@ -380,24 +397,29 @@ public class SwitchListFragment extends Fragment implements FragmentManager.OnBa
         }
 
         // Validate and parse serverResponse into a map
-        Map<Integer, Integer> serverSwitches = new HashMap<Integer, Integer>();
+        Map<Integer, Integer> serverSwitches = new HashMap<>();
         String[] switches = serverResponse.split(":");
-        for (int i = 0; i < switches.length; ++i){
-            if (switches.length < i + 1) {
-                Toast.makeText(mActivity, "Weird switch list from server... Contact someone", Toast.LENGTH_SHORT).show();
+        for (int i = 0; i < switches.length; ++i) {
+            try {
+                if (switches.length < i + 1) {
+                    Toast.makeText(mActivity, "Weird switch list from server... Contact someone", Toast.LENGTH_SHORT).show();
+                    return false;
+                }
+                int id = Integer.valueOf(switches[i]);
+                int status = Integer.valueOf(switches[++i]);
+                if (id < 10 || id > 255) {
+                    Toast.makeText(mActivity, "Invalid switch-id at server", Toast.LENGTH_SHORT).show();
+                    return false;
+                }
+                if (status > 1 || status < 0) {
+                    Toast.makeText(mActivity, "Invalid switch-status at server", Toast.LENGTH_SHORT).show();
+                    return false;
+                }
+                serverSwitches.put(id, status);
+            }catch (Exception e){
+                Log.e("updateArrayAdapter", "Could not parse server message. Error: " + e.getMessage());
                 return false;
             }
-            int id = Integer.valueOf(switches[i]);
-            int status = Integer.valueOf(switches[++i]);
-            if(id < 10 || id > 255){
-                Toast.makeText(mActivity, "Invalid switch-id at server", Toast.LENGTH_SHORT).show();
-                return false;
-            }
-            if(status > 1 || status < 0){
-                Toast.makeText(mActivity, "Invalid switch-status at server", Toast.LENGTH_SHORT).show();
-                return false;
-            }
-            serverSwitches.put(id, status);
         }
 
         // Go through statuses stored at server
@@ -425,7 +447,7 @@ public class SwitchListFragment extends Fragment implements FragmentManager.OnBa
         for (int adapterPos = 0; adapterPos < mSwitchListAdapter.getCount(); ++adapterPos) {
             Switch sw = mSwitchListAdapter.getItem(adapterPos);
 
-            if (! serverSwitches.containsKey(sw.getId())){
+            if (!serverSwitches.containsKey(sw.getId())) {
 
                 this.deleteSwitch(sw);
             }
@@ -433,11 +455,52 @@ public class SwitchListFragment extends Fragment implements FragmentManager.OnBa
         return true;
     }
 
-    private void disableSwitches()
-    {
+    private void disableSwitches() {
         for (int adapterPos = 0; adapterPos < mSwitchListAdapter.getCount(); ++adapterPos) {
             mSwitchListAdapter.getItem(adapterPos).setStatus(-1);
         }
     }
 
+    private void showManagerDialog(Switch sw) {
+        Log.d("showManagerDialog", "Here");
+        FragmentManager manager = getFragmentManager();
+        Fragment frag = manager.findFragmentByTag("SwitchManager");
+        if (frag != null) {
+            manager.beginTransaction().remove(frag).commit();
+        } else {
+            SwitchManagerFragment managerDialog = new SwitchManagerFragment();
+            if (sw != null) {
+                Bundle bundle = new Bundle();
+                Gson gson = new Gson();
+                String gsonString = gson.toJson(sw);
+                Log.d("DEASD", gsonString);
+                bundle.putString("Switch", gsonString);
+                managerDialog.setArguments(bundle);
+            }
+            managerDialog.setTargetFragment(this, REQUEST_CODE);
+            managerDialog.show(manager, "SwitchManager");
+        }
+    }
+
+    @Override
+    public void onActivityResult(int requestCode, int resultCode, Intent data) {
+        // Make sure fragment codes match up
+        if (requestCode == REQUEST_CODE) {
+            String gsonString = data.getStringExtra(SwitchManagerFragment.SWITCH_BUNDLE_KEY);
+            if(gsonString != null){
+                Gson gson = new Gson();
+                Switch swtch = gson.fromJson(gsonString, Switch.class);
+                if (resultCode == SwitchManagerFragment.REQUEST_CODE_ADD){ // Or edit
+                    if (mSwitchListAdapter.contains(swtch.getId()))
+                        updateSwitch(swtch);
+                    else {
+                        swtch.setId(getUniqueId());
+                        add(swtch);
+                    }
+                } else if (resultCode == SwitchManagerFragment.REQUEST_CODE_DELETE){ // Remove
+                    deleteSwitch(swtch);
+                }
+            }
+        }
+    }
 }

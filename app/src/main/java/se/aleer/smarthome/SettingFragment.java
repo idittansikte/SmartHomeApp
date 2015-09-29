@@ -55,7 +55,7 @@ public class SettingFragment extends Fragment {
 
 
     private String TAG = "SwitchList";
-    private Storage mStorage;
+    private StorageSwitches mStorageSwitches;
     private Activity mActivity;
     List<Switch> mSwitches;
     private DragSortListView mDragSortListView;
@@ -65,7 +65,7 @@ public class SettingFragment extends Fragment {
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         mActivity = getActivity();
-        mStorage = new Storage();
+        mStorageSwitches = new StorageSwitches();
     }
 
     @Override
@@ -83,7 +83,7 @@ public class SettingFragment extends Fragment {
 
         mDragSortListView = (DragSortListView) view.findViewById(R.id.listview);
 
-        mSwitches = mStorage.getSwitchList(mActivity);
+        mSwitches = mStorageSwitches.getSwitchList(mActivity);
 
         if ( mSwitches == null ){
             showAlert(getResources().getString(R.string.empty_switch_list_title),
