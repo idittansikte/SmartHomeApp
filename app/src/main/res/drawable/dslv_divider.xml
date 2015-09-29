@@ -3,7 +3,12 @@
 <!-- Backgroud color -->
 <item>
     <shape android:shape="rectangle">
-        <solid android:color="@color/dslv_divider_shadow" />
+        <!--solid android:color="@color/dslv_divider_shadow" /-->
+        <gradient
+            android:angle="180"
+            android:startColor="#00000000"
+            android:centerColor="@color/dslv_divider_shadow"
+            android:endColor="#00000000" />
     </shape>
 </item>
 <item
@@ -17,5 +22,6 @@
         <corners android:radius="0dp"/>
 
     </shape>
+
 </item>
 </layer-list>
