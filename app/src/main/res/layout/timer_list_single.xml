@@ -4,34 +4,53 @@
     android:layout_height="match_parent"
     android:orientation="vertical">
 
-    <TextView
-        android:id="@+id/timer_list_single_title"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:textSize="20sp"
-        android:gravity="center_horizontal">
-    </TextView>
-    <FrameLayout
+        <TextView
+            android:id="@+id/timer_list_single_title"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:textSize="20sp"
+            android:gravity="center_horizontal">
+        </TextView>
+
+    <RelativeLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:paddingRight="30dp"
-        android:paddingLeft="30dp"
-        android:focusable = "false"
-        android:focusableInTouchMode = "false">
-
-        <TextClock
+        android:paddingLeft="30dp">
+        <ImageView
+            android:id="@+id/lampoff"
+            android:contentDescription="Timer off"
+            android:layout_width="35dp"
+            android:layout_height="35dp"
+            android:layout_alignParentStart="true"
+            android:src="@drawable/lamp_on128"/>
+        <TextView
             android:id="@+id/timer_list_single_time_on"
             android:layout_width="wrap_content"
+            android:layout_toEndOf="@+id/lampoff"
+            android:paddingStart="5dp"
+            android:paddingEnd="5dp"
             android:layout_height="wrap_content"
             android:textSize="30sp"
-            android:layout_gravity="start"
-            android:focusable = "true"
-            android:focusableInTouchMode = "true"/>
-        <TextClock
+            android:textStyle="bold"
+            android:layout_gravity="start" />
+
+        <TextView
             android:id="@+id/timer_list_single_time_off"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
+            android:contentDescription="Timer on"
             android:textSize="30sp"
-            android:layout_gravity="end"/>
-    </FrameLayout>
+            android:textStyle="bold"
+            android:paddingStart="5dp"
+            android:paddingEnd="5dp"
+            android:layout_toStartOf="@+id/lampon"/>
+
+        <ImageView
+            android:id="@+id/lampon"
+            android:layout_width="35dp"
+            android:layout_height="35dp"
+            android:layout_alignParentEnd="true"
+            android:src="@drawable/lamp_off128"/>
+    </RelativeLayout>
 </LinearLayout>
