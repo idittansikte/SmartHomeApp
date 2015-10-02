@@ -1,6 +1,8 @@
 package se.aleer.smarthome;
 
+import android.content.Context;
 import android.content.Intent;
+import android.nfc.Tag;
 import android.support.design.widget.FloatingActionButton;
 import android.support.v4.app.FragmentTransaction;
 import android.app.TimePickerDialog;
@@ -21,6 +23,8 @@ import android.widget.TimePicker;
 import android.widget.Toast;
 import android.os.Handler;
 
+import com.google.gson.Gson;
+
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -31,14 +35,35 @@ import java.util.TreeSet;
 
 public class TimerFragment extends Fragment implements TimerListAdapter.customTextTimeListener, TimePickerDialog.OnTimeSetListener {
 
-    private final int REQUEST_CODE = 314;
+    private static String TAG = "TimerFragment";
+    private final int REQUEST_CODE_MANGER = 314;
+    private final int REQUEST_CODE_PICKER = 124;
     private int mPage;
     private String mTitle;
     private List<Timer> mList;
     private TimerListAdapter mTimerListAdapter;
     private int mCurrentTimerPos;
     private Boolean mCurrentTimerWhat;
-    private final Handler mHandler = new Handler();
+    private Map<Integer, String> mSwitches;
+    private OnGetSwitchListListener mCallback;
+
+    public interface OnGetSwitchListListener {
+        public Map<Integer,String> onGetSwitchList();
+    }
+
+    @Override
+    public void onAttach(Context context) {
+        super.onAttach(context);
+        // This makes sure that the container activity has implemented
+        // the callback interface. If not, it throws an exception
+        try {
+            mCallback = (OnGetSwitchListListener) context;
+        } catch (ClassCastException e) {
+            throw new ClassCastException(context.toString()
+                    + " must implement OnEditSwitchListener");
+        }
+
+    }
 
     public static TimerFragment newInstance(int page, String title){
         TimerFragment fragment = new TimerFragment();
@@ -52,6 +77,7 @@ public class TimerFragment extends Fragment implements TimerListAdapter.customTe
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        mSwitches = new HashMap<>();
         StorageTimers storageTimers = new StorageTimers();
         mList = storageTimers.getTimerList(getContext());
         // Check if there is something in memory
@@ -70,16 +96,22 @@ public class TimerFragment extends Fragment implements TimerListAdapter.customTe
 
     }
 
+    /*
+     * Called from MainActivity when SwitchListFragment have modified
+     * id's or names in its switch list.
+     */
+    public void onSwitchListUpdate(Map<Integer, String> sw_list){
+        mSwitches = sw_list;
+    }
+
     @Override
     public void onResume(){
         super.onResume();
-        mRunnable.run();
     }
 
     @Override
     public void onPause(){
         super.onPause();
-        mHandler.removeCallbacks(mRunnable);
         StorageTimers storageTimers = new StorageTimers();
         storageTimers.saveTimerList(getContext(), mList);
     }
@@ -151,40 +183,65 @@ public class TimerFragment extends Fragment implements TimerListAdapter.customTe
     /*
      * This is called from the adapter when someone clicks a
      * time-filed in timer-list.
+     *
+     * Result: show time picker dialog
      */
     @Override
     public void onEditTimeListener(int position, Boolean value) {
-        Toast.makeText(getActivity(), "Button click ",
-                Toast.LENGTH_SHORT).show();
+        Toast.makeText(getActivity(), "Button click ", Toast.LENGTH_SHORT).show();
+
         mCurrentTimerPos = position;
         mCurrentTimerWhat = value;
-        showTimePickerDialog();
+
+        FragmentTransaction ft = getActivity().getSupportFragmentManager().beginTransaction();
+        DialogFragment newFragment = new TimePickerDialogFragment();
+        newFragment.setTargetFragment(this, REQUEST_CODE_PICKER);
+        newFragment.show(ft, "timePicker");
     }
 
     /*
      * Show TimerManagerDialogFragment
      */
     private void showManagerDialog(Timer timer){
-        Log.d("showManagerDialog", "Here");
+
+        mSwitches = mCallback.onGetSwitchList();
+
         FragmentManager manager = getFragmentManager();
         Fragment frag = manager.findFragmentByTag("TimerManager");
         if (frag != null) {
             manager.beginTransaction().remove(frag).commit();
         }
+        // Fix lists/ Take away occupied switches
+        Map<Integer, String> availableSw = new HashMap<>();
+        TreeSet<Integer> occupiedSw = new TreeSet<>();
+        for(Timer t : mList){
+            for(Integer sid : t.getSwitchList())
+                occupiedSw.add(sid);
+        }
+
+        for(Map.Entry<Integer, String> allsw : mSwitches.entrySet()){
+            if(!occupiedSw.contains(allsw.getKey()) || (timer != null && timer.haveSwitch(allsw.getKey()))){
+                availableSw.put(allsw.getKey(), allsw.getValue());
+            }
+        }
+        // end fix
         TimerManagerDialogFragment managerDialog = new TimerManagerDialogFragment();
         Bundle bundle = new Bundle();
-        if (timer != null) {
-            Log.d("TTT", timer.getTitle());
-            bundle.putString(TimerManagerDialogFragment.NAME_BUNDLE_KEY, timer.getTitle()); // Name of
-            bundle.putInt(TimerManagerDialogFragment.ID_BUNDLE_KEY, timer.getId()); // id
-            Log.d("TTT", timer.getTitle());
-        } else { // If new one
-            Log.d("TTT", "New one");
-            bundle.putInt(TimerManagerDialogFragment.ID_BUNDLE_KEY, generate_timer_id()); // New generated id
-            bundle.putString(TimerManagerDialogFragment.NAME_BUNDLE_KEY, ""); // Name
+        Gson gson = new Gson();
+        if (timer != null) { // If edit exiting timer..
+            String gsonTimer = gson.toJson(timer);
+            String gsonSwitchList = gson.toJson(availableSw);
+            bundle.putString(TimerManagerDialogFragment.TIMER_BUNDLE_KEY, gsonTimer); // Name of
+            bundle.putString(TimerManagerDialogFragment.SWITCHES_BUNDLE_KEY, gsonSwitchList); // id
+            //Log.d("TTT", timer.getTitle());
+        } else { // If new timer is to be added
+            Timer nt = new Timer(generate_timer_id());
+            Toast.makeText(getContext(), "Timer id:" + nt.getId(), Toast.LENGTH_LONG).show();
+            bundle.putString(TimerManagerDialogFragment.TIMER_BUNDLE_KEY, gson.toJson(nt)); // New generated id
+            bundle.putString(TimerManagerDialogFragment.SWITCHES_BUNDLE_KEY, gson.toJson(availableSw)); // Name
         }
         managerDialog.setArguments(bundle);
-        managerDialog.setTargetFragment(this, REQUEST_CODE);
+        managerDialog.setTargetFragment(this, REQUEST_CODE_MANGER);
         managerDialog.show(manager, "TimerManager");
     }
 
@@ -192,9 +249,7 @@ public class TimerFragment extends Fragment implements TimerListAdapter.customTe
      * Shows the time picker dialog
      */
     public void showTimePickerDialog(/*View v*/) {
-        FragmentTransaction ft = getActivity().getSupportFragmentManager().beginTransaction();
-        DialogFragment newFragment = new TimePickerDialogFragment(this);
-        newFragment.show(ft, "timePicker");
+
     }
 
     /*
@@ -202,12 +257,16 @@ public class TimerFragment extends Fragment implements TimerListAdapter.customTe
      */
     @Override
     public void onTimeSet(TimePicker view, int hourOfDay, int minute) {
-        Log.d("GGGG", "TimePickerDialogFragment " + hourOfDay + ":" + minute);
+        Log.d(TAG, "TimePickerDialogFragment " + hourOfDay + ":" + minute);
         Timer timer = mList.get(mCurrentTimerPos);
         if (mCurrentTimerWhat == TimerListAdapter.TIME_ON)
             timer.setTimeOn(hourOfDay, minute);
         else
             timer.setTimeOff(hourOfDay, minute);
+
+        for(Integer i : timer.getSwitchList()){
+            Log.d(TAG, "Timer have switch: " + i );
+        }
         saveTimer(timer);
     }
 
@@ -221,25 +280,23 @@ public class TimerFragment extends Fragment implements TimerListAdapter.customTe
     public void onActivityResult(int requestCode, int resultCode, Intent data) {
 
         // Make sure fragment codes match up
-        if (requestCode == REQUEST_CODE) {
-            String name = data.getStringExtra(TimerManagerDialogFragment.NAME_BUNDLE_KEY);
-            Integer id = data.getIntExtra(TimerManagerDialogFragment.ID_BUNDLE_KEY, -1);
-            Timer tmpTimer = new Timer(name);
-            tmpTimer.setId(id);
+        switch (requestCode){
 
-            // Find if timer exists..
-            for(Timer timer : mList) {
-                if(timer.equals(tmpTimer)){ // If exists
-                    timer.setTitle(name);
-                    timer.setId(id);
-                    saveTimer(timer);
-                    return;
-                }
-            }
-            tmpTimer.setTitle(name);
-            tmpTimer.setId(id);
-            saveTimer(tmpTimer);
+            case REQUEST_CODE_MANGER:
+                Gson gson = new Gson();
+                Timer timer = gson.fromJson(data.getStringExtra(TimerManagerDialogFragment.TIMER_BUNDLE_KEY), Timer.class);
+
+                if(mList.contains(timer))
+                    deleteTimer(timer);
+                saveTimer(timer);
+                break;
+            case REQUEST_CODE_PICKER:
+
+                break;
+            default:
+                // Do nothing
         }
+
     }
 
     /*
@@ -260,42 +317,11 @@ public class TimerFragment extends Fragment implements TimerListAdapter.customTe
         }
     }
 
-    // Sync timer list with server list in interval
-    final Runnable mRunnable = new Runnable() {
-        @Override
-        public void run() {
-            // Get and set status for all switches...
-            StorageSetting ss = new StorageSetting(getActivity());
-            String port = ss.getString(StorageSetting.PREFS_SERVER_PORT);
-            if (port != null) {
-                TCPAsyncTask getStatusArduino = new TCPAsyncTask(ss.getString(StorageSetting.PREFS_SERVER_URL),
-                        Integer.parseInt(port)) {
-                    // TODO: Disable this when waiting for remove/add/switch...
-                    @Override
-                    protected void onPostExecute(String s) {
-                        //Toast.makeText(mActivity, "Updating...", Toast.LENGTH_SHORT).show();
-                        serverSync(s);
-                    }
-                };
-                getStatusArduino.execute("W");
-            }
-            mHandler.postDelayed(this, 20000);
-        }
-    };
 
     private void deleteTimer(final Timer timer){
-        mHandler.removeCallbacks(mRunnable);
-        StorageSwitches storageSwitches = new StorageSwitches();
-        List<Switch> storedSwitches = storageSwitches.getSwitchList(getContext());
-        for(Switch sw : storedSwitches){
-            if(sw.getTimerId() == timer.getId()){
-                sw.setTimerId(-1);
-            }
-        }
-        storageSwitches.saveSwitchList(getContext(), storedSwitches);
         mList.remove(timer);
         mTimerListAdapter.notifyDataSetChanged();
-
+        saveToMemory();
         // Add timer at server...
         StorageSetting ss = new StorageSetting(getActivity());
         String port = ss.getString(StorageSetting.PREFS_SERVER_PORT);
@@ -315,7 +341,6 @@ public class TimerFragment extends Fragment implements TimerListAdapter.customTe
                         Toast.makeText(getContext(), R.string.no_such_switch_at_server, Toast.LENGTH_SHORT).show();
                     }
                     // Continue fetching
-                    mRunnable.run();
                 }
             };
             // Send add command;
@@ -326,7 +351,14 @@ public class TimerFragment extends Fragment implements TimerListAdapter.customTe
     }
 
     private void saveTimer(final Timer timer){
-        mHandler.removeCallbacks(mRunnable);
+        if( mList.contains(timer)) {
+           // TODO: HERE's WHERE I LEFT
+        }else // If completely new timer
+        {
+            mList.add(timer);
+        }
+        saveToMemory();
+        mTimerListAdapter.notifyDataSetChanged();
         // Add timer at server...
         StorageSetting ss = new StorageSetting(getActivity());
         String port = ss.getString(StorageSetting.PREFS_SERVER_PORT);
@@ -341,99 +373,52 @@ public class TimerFragment extends Fragment implements TimerListAdapter.customTe
                         return;
                     }
                     if (s.equals("OK")) {
-                        if(! mList.contains(timer)) {
-                            mList.add(timer);
-                        }
-                        mTimerListAdapter.notifyDataSetChanged();
                         Toast.makeText(getContext(), "Timer updated successfully", Toast.LENGTH_LONG).show();
                     } else if (s.equals("NOK")) {
                         Toast.makeText(getContext(), R.string.no_such_switch_at_server, Toast.LENGTH_SHORT).show();
                     }
                     // Continue fetching
-                    mRunnable.run();
                 }
             };
-            // Generate switch id string
-            String switch_string = "";
-            StorageSwitches storageSwitches = new StorageSwitches();
-            List<Switch> sw_list = storageSwitches.getSwitchList(getContext());
-            for(Switch sw : sw_list){
-                if(sw.getTimerId() == timer.getId())
-                    switch_string += sw.getId() + ":";
-            }
-            // Send add command;
-            Log.d("Switches: ", switch_string);
-            tcpClient.execute("T:" + timer.getId() + ":" + timer.getTimeOnHour() + ":" + timer.getTimeOnMin()
-                                + ":" + timer.getTimeOffHour() + ":" + timer.getTimeOffMin() + ":" + switch_string);
+            Log.d(TAG, "Adding timer to server:\n"+timer.toString());
+            tcpClient.execute("T:" + timer.toString());
         }else{
             Toast.makeText(getContext(), R.string.no_server_configuration, Toast.LENGTH_LONG).show();
         }
     }
 
-    private void serverSync(String serverMessage){
-
-        if (serverMessage == null){
-            Toast.makeText(getContext(), R.string.no_response_from_server, Toast.LENGTH_LONG).show();
+    /*
+     * Called from MainActivity when syncing with the server.
+     *
+     * Input is all timers at server and that's the most recent ones
+     */
+    public void serverSync(List<Timer> serverTimers){
+        if(serverTimers.isEmpty())
             return;
-        }
-        Log.d("ServerRespTimerList: " , serverMessage );
-        if (serverMessage.isEmpty() || serverMessage.equals("-1")){
-            return;
-        }
+        List<Timer> newList = new ArrayList<>();
         try {
-            StorageSwitches storageSwitches = new StorageSwitches();
-            List<Switch> switchList = storageSwitches.getSwitchList(getContext());
-            Map<Integer, Integer> map = new HashMap<>();
-            List<Timer> newList = new ArrayList<>();
-            String[] server_switchlist = serverMessage.split("N");
-            for (int i = 0; i < server_switchlist.length; ++i) {
-                String[] server_switch = server_switchlist[i].split(":");
-                if (server_switch.length != 6) {
-                    throw new IOException("Arguments from server not matching expectation");
-                }
-                int swId = Integer.valueOf(server_switch[0]);
-                int timerId = Integer.valueOf(server_switch[1]);
-                int onHour = Integer.valueOf(server_switch[2]);
-                int onMinute = Integer.valueOf(server_switch[3]);
-                int offHour = Integer.valueOf(server_switch[4]);
-                int offMinute = Integer.valueOf(server_switch[5]);
-
-                if (swId < 10 || swId > 255 || timerId < 0 || timerId > 255 || onHour < 0 || onHour > 24 || onMinute < 0 || onMinute > 60
-                        || offHour < 0 || offHour > 24 || offMinute < 0 || offMinute > 60) {
-                    Toast.makeText(getContext(), "Corrupted data at server", Toast.LENGTH_LONG).show();
-                    throw new IOException("Corrupted data at server");
-                }
-                map.put(swId, timerId);
-                Timer timer = new Timer(timerId, "Synced", onHour, onMinute, offHour, offMinute);
+            for(Timer timer : serverTimers){
                 int index = mList.indexOf(timer);
-                if(index == -1){ // If it doesn't exist
+                if(index == -1){ // If it doesn't exist in our list
+                    newList.add(timer); // Add it
+                }else { // IF it exists in our list
+                    // Replace it with servers timer
+                    timer.setTitle(mList.get(index).getTitle());
                     newList.add(timer);
-                }else { // Exist
-
-                    Timer existing = mList.get(index);
-                    if (!newList.contains(existing))
-                    {
-                        existing.setTimeOn(onHour, onMinute);
-                        existing.setTimeOff(offHour, offMinute);
-                        newList.add(existing);
-                    }
                 }
             }
-            for(Switch sw : switchList){
-                if(map.containsKey(sw.getId())){
-                    sw.setTimerId(map.get(sw.getId()));
-                }else {
-                    sw.setTimerId(-1);
-                }
-            }
-            storageSwitches.saveSwitchList(getContext(), switchList);
+            // Replace server syncList with current old one...
             mList.clear();
             mList.addAll(newList);
             mTimerListAdapter.notifyDataSetChanged();
         }catch (Exception e){
-            Toast.makeText(getContext(), "Unreadable response from server... ", Toast.LENGTH_LONG).show();
+            Toast.makeText(getContext(), "Unable  ", Toast.LENGTH_LONG).show();
             Log.e("updateArrayAdapter", "Could not parse server message. Error: " + e.getMessage());
-            return;
         }
+    }
+
+    private void saveToMemory(){
+        StorageTimers storageTimers = new StorageTimers();
+        storageTimers.saveTimerList(getContext(), mList);
     }
 }

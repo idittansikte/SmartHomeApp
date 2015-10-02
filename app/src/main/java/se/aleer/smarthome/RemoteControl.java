@@ -1,6 +1,7 @@
 package se.aleer.smarthome;
 
 import android.app.ActionBar;
+import android.os.Handler;
 import android.support.design.widget.TabLayout;
 import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentManager;
@@ -12,8 +13,13 @@ import android.os.Bundle;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
+import android.widget.Toast;
 
-public class RemoteControl extends AppCompatActivity implements SwitchListFragment.OnEditSwitchListener {
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+public class RemoteControl extends AppCompatActivity implements TimerFragment.OnGetSwitchListListener{
 
     private static final String TAG = "RemoteControl";
 
@@ -21,77 +27,31 @@ public class RemoteControl extends AppCompatActivity implements SwitchListFragme
     SwitchListFragment switchListFragment;
     SettingFragment settingFragment;
     SwitchManagerPopup mAddSwitchPopup;
-    FragmentPagerAdapter mAdapterViewPager;
+    MyFragmentPagerAdapter mAdapterViewPager;
+    FragmentManager mFm;
+    ViewPager mViewPager;
+    private final Handler mHandler = new Handler();
     // If edit-switch mode selected in SwitchListFragment this is runs
-    public void onEditSwitch(Switch swtch)
-    {
-        // #### Switch fragment from SwitchListFragment to SwitchManagerFragment ####
-       /* SwitchManagerFragment managerFragment = (SwitchManagerFragment)
-                getFragmentManager().findFragmentByTag(SwitchManagerFragment.ARG_ITEM_ID);
-
-        if (managerFragment == null) {
-            // Create fragment
-            managerFragment = new SwitchManagerFragment();
-        }
-        // Set switch so that it can be edited
-        managerFragment.setSwitch(swtch);
-        FragmentTransaction transaction = getFragmentManager().beginTransaction();
-        // Replace whatever it is in the fragment container with this one...
-        transaction.replace(R.id.content_frame, managerFragment, SwitchManagerFragment.ARG_ITEM_ID);
-        // Add transaction to the back stack so the user can navigate back
-        transaction.addToBackStack(null);
-        transaction.commit();*/
-    }
-
-    // If SwitchManagerFragment needs update switch in SwitchListFragment this is executed.
-    public void onManagedSwitch(Switch swtch, boolean remove){
-       /* // Remove SwitchManagerFragment from stack so its clean to the next time..
-        getFragmentManager().popBackStack();
-        // #### Switch fragment from SwitchListFragment to SwitchManagerFragment ####
-        SwitchListFragment listFragment = (SwitchListFragment)
-                getFragmentManager().findFragmentByTag(SwitchListFragment.ARG_ITEM_ID);
-
-        if (listFragment == null) {
-            // Create fragment
-            listFragment = new SwitchListFragment();
-        }
-        // Set switch so that it can be edited
-        listFragment.manageManagedSwitch(swtch, remove);
-        FragmentTransaction transaction = getFragmentManager().beginTransaction();
-        // Replace whatever it is in the fragment container with this one...
-        transaction.replace(R.id.content_frame, listFragment, SwitchListFragment.ARG_ITEM_ID);
-        // Add transaction to the back stack so the user can navigate back
-        //transaction.addToBackStack(null);
-        transaction.commit();*/
-    }
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_remote_control);
-        /*FragmentManager fragmentManager = getFragmentManager();
-        FragmentTransaction fragmentTransaction = fragmentManager.beginTransaction();
-        SwitchListFragment switchListFragment = new SwitchListFragment();
-        fragmentTransaction.add(R.id.content_frame, switchListFragment, SwitchListFragment.ARG_ITEM_ID);
-        fragmentTransaction.commit();
-*/
         // Get the ViewPager and set it's PagerAdapter so that it can display items
-        ViewPager viewPager = (ViewPager) findViewById(R.id.viewpager);
+        mViewPager = (ViewPager) findViewById(R.id.viewpager);
         //viewPager.setPageMargin(20);
         //viewPager.setPageMarginDrawable(R.color.black);
-        mAdapterViewPager = new MyFragmentPagerAdapter(getSupportFragmentManager(), RemoteControl.this);
-        viewPager.setAdapter(mAdapterViewPager);
+        mFm = getSupportFragmentManager();
+        mAdapterViewPager = new MyFragmentPagerAdapter(mFm, RemoteControl.this);
+        mViewPager.setAdapter(mAdapterViewPager);
         // Give the TabLayout the ViewPager
         TabLayout tabLayout = (TabLayout) findViewById(R.id.sliding_tabs);
         // Force full width
         tabLayout.setTabGravity(TabLayout.GRAVITY_FILL);
         tabLayout.setTabMode(TabLayout.MODE_FIXED);
-        tabLayout.setupWithViewPager(viewPager);
+        tabLayout.setupWithViewPager(mViewPager);
+        mRunnable.run();
         /** Adding tabs src: */
-        //mTabHost = (FragmentTabHost)findViewById(android.R.id.tabhost);
-        //mTabHost.setup(this, getSupportFragmentManager(), android.R.id.tabcontent);
-        //mTabHost.addTab(mTabHost.newTabSpec("Switches").setIndicator("Switches"), SwitchListFragment.class, null);
-        //mTabHost.addTab(mTabHost.newTabSpec("Settings").setIndicator("Tab 2"), Settings.class, null);
     }
 
     @Override
@@ -133,24 +93,6 @@ public class RemoteControl extends AppCompatActivity implements SwitchListFragme
     public void hideUpButton() { getSupportActionBar().setDisplayHomeAsUpEnabled(false); }
 
 
-
-    /*public void switchContent(Fragment fragment, String tag) {
-        FragmentManager fragmentManager = getSupportFragmentManager();
-        while (fragmentManager.popBackStackImmediate());
-
-        if (fragment != null) {
-            FragmentTransaction transaction = fragmentManager
-                    .beginTransaction();
-            transaction.replace(R.id.content_frame, fragment, tag);
-            //Only FavoriteListFragment is added to the back stack.
-            //if (!(fragment instanceof SettingFragment)) {
-              //  transaction.addToBackStack(tag);
-            //}
-            transaction.commit();
-            contentFragment = fragment;
-        }
-    }*/
-
     /*
  * We call super.onBackPressed(); when the stack entry count is > 0. if it
  * is instanceof ProductListFragment or if the stack entry count is == 0, then
@@ -170,6 +112,71 @@ public class RemoteControl extends AppCompatActivity implements SwitchListFragme
         else {*/
             super.onBackPressed();
         //}
+
+    }
+
+    /*
+     * Called when SwitchListFragment have updated id's or names in
+     * its switch list.
+     */
+    public Map<Integer,String> onGetSwitchList(){
+        SwitchListFragment sf = mAdapterViewPager.getSwitchFragment();
+        if (sf != null){
+            return sf.mapList();
+        }
+        return new HashMap<>();
+    }
+
+    /*
+     * Receives frequent updates from the server.
+     *
+     * The information is passed to the fragments..
+     */
+    final Runnable mRunnable = new Runnable() {
+        @Override
+        public void run() {
+            // Get and set status for all switches...
+            StorageSetting ss = new StorageSetting(getApplicationContext());
+            String port = ss.getString(StorageSetting.PREFS_SERVER_PORT);
+            String url = ss.getString(StorageSetting.PREFS_SERVER_URL);
+            if (port != null && !port.isEmpty() && url != null && !url.isEmpty() ) {
+                mHandler.removeCallbacks(mRunnable);
+                TCPAsyncTask getStatusArduino = new TCPAsyncTask(url, Integer.parseInt(port)) {
+                    // TODO: Disable this when waiting for remove/add/switch...
+                    @Override
+                    protected void onPostExecute(String s) {
+                        feedFragments(s);
+                        mHandler.postDelayed(mRunnable, 10000);
+                    }
+                };
+                getStatusArduino.execute("G");
+            }
+        }
+    };
+
+    /*
+     * Feeding information from the server to the fragments.
+     * Fragments is only getting the information they need.
+     */
+    private void feedFragments(String message){
+        if (message == null){
+            Toast.makeText(getApplicationContext(), R.string.no_response_from_server, Toast.LENGTH_LONG).show();
+            return;
+        }
+        if (message.isEmpty() || message.equals("-1")){
+            return;
+        }
+        ServerResponseParser parser = new ServerResponseParser();
+        TimerFragment tf = mAdapterViewPager.getTimerFragment();
+        SwitchListFragment sf = mAdapterViewPager.getSwitchFragment();
+        if(sf != null) {
+            sf.updateListAdapter(parser.getSwitchStatus(message));
+            Log.d(TAG, "SwitchFragment ALIVE!");
+            if(tf != null) {
+                tf.serverSync(parser.getTimers(message));
+                Log.d(TAG, "TIMER fragemnt ALIVE!");
+            }
+        }
 
     }
 

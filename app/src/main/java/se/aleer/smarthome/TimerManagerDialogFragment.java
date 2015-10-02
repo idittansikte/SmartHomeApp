@@ -11,21 +11,26 @@ import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import com.google.gson.Gson;
+import com.google.gson.reflect.TypeToken;
 
+import java.lang.reflect.Type;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 public class TimerManagerDialogFragment extends DialogFragment {
-
+    private static String TAG = "TimerManager";
     DoubleListViewWrapper mDlvw;
     final static public String SWITCHIDS_BUNDLE_KEY = "KEY_SWITCH_IDS";
-    final static public String NAME_BUNDLE_KEY = "KEY_SWITCH_NAME";
-    final static public String ID_BUNDLE_KEY = "KEY_SWITCH_IDS";
+    final static public String TIMER_BUNDLE_KEY = "KEY_SWITCH_NAME";
+    final static public String SWITCHES_BUNDLE_KEY = "KEY_SWITCH_IDS";
     private ViewHolder mViewHolder;
-    private int mId;
-    private String mName;
+    private Timer mTimer;
+    private Map<Integer, String> mSwitches;
 
     public class ViewHolder {
         Button button_cancel;
@@ -48,8 +53,25 @@ public class TimerManagerDialogFragment extends DialogFragment {
         super.onCreate(savedInstanceState);
         Bundle bundle = getArguments();
         if(bundle != null){
-            mName = bundle.getString(NAME_BUNDLE_KEY);
-            mId = bundle.getInt(ID_BUNDLE_KEY, -1);
+            try {
+                Gson gson = new Gson();
+                mTimer = gson.fromJson(bundle.getString(TIMER_BUNDLE_KEY), Timer.class);
+                Type type = new TypeToken<Map<Integer, String>>() {}.getType();
+                mSwitches = gson.fromJson(bundle.getString(SWITCHES_BUNDLE_KEY), type);
+                if(!mSwitches.isEmpty())
+                {
+                    Log.d(TAG, "mSwitches");
+                    for (Map.Entry<Integer, String> d : mSwitches.entrySet()){
+                        Log.d(TAG, d.getValue());
+                    }
+                }
+            }catch (Exception e){
+                Log.e(TAG, "Failed to parse parameters from bundle" + e.getMessage());
+                dismiss();
+            }
+        }else {
+            Toast.makeText(getContext(), "Failed...", Toast.LENGTH_LONG).show();
+            dismiss();
         }
     }
 
@@ -73,24 +95,19 @@ public class TimerManagerDialogFragment extends DialogFragment {
             }
         });
 
-        mViewHolder.name.setText(mName);
+        mViewHolder.name.setText(mTimer.getTitle());
         return view;
     }
 
     private void setupDoubleListView(View view){
-        // Get switch list from memory...
-        StorageSwitches storageSwitches = new StorageSwitches();
-        List<Switch> switchesMem = storageSwitches.getSwitchList(getContext());
         List<Switch> selected = new ArrayList<>();
-        // If not a new Timer...
         List<Switch> unselected = new ArrayList<>();
-        // Separate switches into two lists
-        for (Switch sw : switchesMem) {
-            if (sw.getTimerId() == mId){ // If this timer got this switch, add it to selected
-                selected.add(sw);
-            }else if (sw.getTimerId() == -1){ // If not already taken by another timer...
-                unselected.add(sw);
-            }
+        // If not a new Timer...
+        for(Map.Entry<Integer, String> entry : mSwitches.entrySet()){
+            if(mTimer.haveSwitch(entry.getKey()))
+                selected.add(new Switch(entry.getKey(), entry.getValue()));
+            else
+                unselected.add(new Switch(entry.getKey(), entry.getValue()));
         }
         mDlvw = new DoubleListViewWrapper(getContext(), view, unselected, selected);
         mDlvw.enableTitles(true);
@@ -110,22 +127,16 @@ public class TimerManagerDialogFragment extends DialogFragment {
             //TODO: Show warning popup! (You have to select at least one!)
             return;
         }
-        // Save and remove timerID in switches...
-        StorageSwitches storageSwitches = new StorageSwitches();
-        List<Switch> switchesMem = storageSwitches.getSwitchList(getContext());
-        for (Switch sw : switchesMem) {
-            if(selectedSwitches.contains(sw)){ // If switch is in selected list
-                sw.setTimerId(mId); // Set ownership to this timer
-            }else if (sw.getTimerId() == mId){ // If switch is not in the selected list but timer has ownership
-                sw.setTimerId(-1); // Remove it so other timers can select it...
-            }
+        mTimer.clearSwitchList();
+        for(Switch s : selectedSwitches){
+            mTimer.addSwitch(s.getId());
         }
-        // Save switch changes
-        storageSwitches.saveSwitchList(getContext(), switchesMem);
+        mTimer.setTitle(mViewHolder.name.getText().toString());
         // Send edited/added timer back...
         Intent intent = new Intent();
-        intent.putExtra(ID_BUNDLE_KEY, mId); // Timer ID
-        intent.putExtra(NAME_BUNDLE_KEY, mViewHolder.name.getText().toString()); // Name of Timer...
+        Gson gson = new Gson();
+        Toast.makeText(getContext(), "Timer id:" + mTimer.getId(), Toast.LENGTH_LONG).show();
+        intent.putExtra(TIMER_BUNDLE_KEY, gson.toJson(mTimer)); // Timer ID
         getTargetFragment().onActivityResult(getTargetRequestCode(), 0, intent);
         dismiss();
     }

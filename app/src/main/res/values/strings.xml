@@ -25,5 +25,24 @@
     <string name="single_protocol_spinner_desc">Protocol:</string>
     <string name="action_save_switch">Save switch</string>
     <string name="action_delete_switch">Delete switch</string>
+
+    <!-- Buttons -->
+    <string name="save_item">Save</string>
+    <string name="edit_item">Edit</string>
+    <string name="remove_item">Remove</string>
+
+    <!-- Messages in classes -->
+    <string name="no_server_configuration">You need to configure you server first.</string>
+    <string name="no_response_from_server">Server could not be reached!</string>
+    <string name="server_cache_full">The server is full, remove some switches first.</string>
+    <string name="no_such_switch_at_server">Removed locally, switch not found at server. </string>
+
+    <!-- Timer-->
+    <!-- Options when doing a long-click on timer list item
+         DO NOT CHANGE THE ORDER! -->
+    <string-array name="timer_listview_menu">
+        <item>Edit</item>
+        <item>Delete</item>
+    </string-array>
 </resources>
 
