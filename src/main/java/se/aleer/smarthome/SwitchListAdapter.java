@@ -2,12 +2,14 @@ package se.aleer.smarthome;
 
 import android.app.Activity;
 import android.content.Context;
+import android.os.Vibrator;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ArrayAdapter;
 import android.widget.ImageButton;
+import android.widget.ImageView;
 import android.widget.ProgressBar;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -16,9 +18,21 @@ import java.util.List;
 
 public class SwitchListAdapter extends ArrayAdapter<Switch> {
 
+
     private Context mContext;
     List<Switch> mSwitches;
     StorageSwitches mStorageSwitches;
+    OnSwitchStatusChangeListener mCallback;
+
+
+    public interface OnSwitchStatusChangeListener {
+        public void changeStatus(Switch swtch);
+    }
+
+    public void setOnSwitchStatusChangeListener(OnSwitchStatusChangeListener listener){
+        mCallback = listener;
+    }
+
     public SwitchListAdapter(Context context, List<Switch> switches){
         super(context, R.layout.list_single, switches);
         mContext = context;
@@ -29,12 +43,9 @@ public class SwitchListAdapter extends ArrayAdapter<Switch> {
         ImageButton switchButton;
         ProgressBar progressBar;
         TextView switchName;
+        ImageView timerIndicator;
+        ImageView lightSensorIndicator;
     }
-
-   /* @Override
-    public int getCount(){
-        return mSwitches.size();
-    }*/
 
     public void setItemStatus(int position, int status)
     {
@@ -54,79 +65,72 @@ public class SwitchListAdapter extends ArrayAdapter<Switch> {
     @Override
     public View getView(int position, View convertView, ViewGroup parent) {
         ViewHolder holder = null;
+        // This is for not redo things we've done before
         if (convertView == null) {
             LayoutInflater inflater = (LayoutInflater) mContext
                     .getSystemService(Activity.LAYOUT_INFLATER_SERVICE);
             convertView = inflater.inflate(R.layout.list_single, null);
+            // Populate viewHolder with all views
             holder = new ViewHolder();
             holder.switchButton = (ImageButton) convertView.findViewById(R.id.single_list_button);
             holder.switchName = (TextView) convertView.findViewById(R.id.text);
             holder.progressBar = (ProgressBar) convertView.findViewById(R.id.single_list_loading);
+            holder.timerIndicator = (ImageView) convertView.findViewById(R.id.has_timer_indicator);
+            holder.lightSensorIndicator = (ImageView) convertView.findViewById(R.id.has_light_sensor_indicator); // Not implemented yet
             convertView.setTag(holder);
         } else {
             holder = (ViewHolder) convertView.getTag();
         }
         final Switch curSwitch = (Switch) getItem(position);
+         /* ### NAME ### */
         // Set list item name
         holder.switchName.setText(curSwitch.getName());
 
+        /* ### INDICATORS ### */
+        if (curSwitch.hasTimer){
+            holder.timerIndicator.setVisibility(View.VISIBLE);
+        }else{
+            holder.timerIndicator.setVisibility(View.INVISIBLE);
+        }
+
+        // Not implemented yet...
+        holder.lightSensorIndicator.setVisibility(View.INVISIBLE);
+
+        /* ### Button AND progressbar ### */
         final ProgressBar pgb = holder.progressBar;
         final ImageButton btn = holder.switchButton;
         // Set curSwitch's state.
         int curSwitchState = curSwitch.getStatus();
-        if(curSwitchState == -1)
-        {
-            Log.d("SLA", "Setting switchState = -1");
+        if(curSwitch.waitingUpdate){ // Set loading and waiting image.
+            if(btn.isActivated())
+                btn.setClickable(false);
+            if(pgb.getVisibility() != View.VISIBLE)
+                pgb.setVisibility(View.VISIBLE);
             btn.setImageResource(R.drawable.button_white_128);
-            //holder.switchButton.setVisibility(View.INVISIBLE);
+        }else {
+            btn.setClickable(true);
             holder.progressBar.setVisibility(View.INVISIBLE);
-        }else if(curSwitchState == 1 || curSwitchState == 0) { // On or off
-            Log.d("SLA", "Setting switchState = " + curSwitchState);
-            holder.switchButton.setVisibility(View.VISIBLE);
-            holder.progressBar.setVisibility(View.INVISIBLE);
-            if (curSwitchState == 1) { // On
-                btn.setImageResource(R.drawable.button_green_128);
-            } else { // Off
-                btn.setImageResource(R.drawable.button_red_128);
+            if (curSwitchState == -1) // If not known status
+            {
+                btn.setImageResource(R.drawable.button_white_128);
+
+            } else if (curSwitchState == 1 || curSwitchState == 0) { // On or off
+                holder.switchButton.setVisibility(View.VISIBLE);
+
+                if (curSwitchState == 1) { // On
+                    btn.setImageResource(R.drawable.button_green_128);
+                } else { // Off
+                    btn.setImageResource(R.drawable.button_red2_128);
+                }
             }
         }
         holder.switchButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                StorageSetting ss = new StorageSetting(mContext);
-                String port = ss.getString(StorageSetting.PREFS_SERVER_PORT);
-                if (port != null) {
-                    TCPAsyncTask tcpClient = new TCPAsyncTask(ss.getString(StorageSetting.PREFS_SERVER_URL), Integer.parseInt(port)) {
-                        @Override
-                        protected void onPostExecute(String s) {
-                            if (s == null || s.isEmpty()) {
-                                Toast.makeText(mContext, "No response from server...", Toast.LENGTH_SHORT).show();
-                                btn.setImageResource(R.drawable.button_white_128);
-                                curSwitch.setStatus(0);
-                            } else {
-                                Toast.makeText(mContext, s + " " + curSwitch.getId(), Toast.LENGTH_SHORT).show();
-                                if (s.equals("OK")) {
-                                    if (curSwitch.getStatus() == 1) {
-                                        btn.setImageResource(R.drawable.button_red_128);
-                                        curSwitch.setStatus(0);
-                                    } else if (curSwitch.getStatus() == 0) {
-                                        btn.setImageResource(R.drawable.button_green_128);
-                                        curSwitch.setStatus(1);
-                                    }
-                                }
-
-                                pgb.setVisibility(View.INVISIBLE);
-                                //btn.setVisibility(View.VISIBLE);
-                                btn.setActivated(true);
-                            }
-                        }
-                    };
-                    //btn.setVisibility(View.VISIBLE);
-                    btn.setImageResource(R.drawable.button_white_128);
-                    btn.setActivated(false);
-                    pgb.setVisibility(View.VISIBLE);
-                    tcpClient.execute("S:" + curSwitch.getId() + ":" + (curSwitch.getStatus() == 1 ? "0" : "1"));
-                }
+                Vibrate.vibrate(mContext);
+                curSwitch.waitingUpdate = true;
+                notifyDataSetChanged();
+                mCallback.changeStatus(curSwitch);
             }
         });
 
@@ -155,10 +159,10 @@ public class SwitchListAdapter extends ArrayAdapter<Switch> {
 
     @Override
     public int getPosition(Switch swtch) {
-        Log.d("SwitchListAdapter", "Search for index START");
-        Log.d("SwitchListAdaper", "mSwitches size: " + mSwitches.size());
+        //Log.d("SwitchListAdapter", "Search for index START");
+        //Log.d("SwitchListAdaper", "mSwitches size: " + mSwitches.size());
         int i = mSwitches.indexOf(swtch);
-        Log.d("SwitchListAdapter", "Search for index DONE");
+        //Log.d("SwitchListAdapter", "Search for index DONE");
         return i;
     }
 

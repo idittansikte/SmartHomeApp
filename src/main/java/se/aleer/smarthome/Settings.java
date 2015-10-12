@@ -6,6 +6,7 @@ import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
 import android.os.AsyncTask;
 import android.os.Bundle;
+import android.os.Vibrator;
 import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
 import android.view.LayoutInflater;
@@ -42,7 +43,8 @@ public class Settings extends AppCompatActivity {
         mStorageSetting = new StorageSetting(this);
         // Enable up button
         assert getSupportActionBar() != null;
-        getSupportActionBar().setDisplayHomeAsUpEnabled(true);
+        // BUGG
+        //getSupportActionBar().setDisplayHomeAsUpEnabled(true);
 
         LayoutInflater inflater = (LayoutInflater) this
                 .getSystemService(Activity.LAYOUT_INFLATER_SERVICE);
@@ -57,6 +59,7 @@ public class Settings extends AppCompatActivity {
         mHolder.progressBar = (ProgressBar) findViewById(R.id.settings_connection_progressbar);
         mHolder.success = (ImageView) findViewById(R.id.setting_connection_success);
         mHolder.failure = (ImageView) findViewById(R.id.setting_connection_failure);
+        mHolder.vibration = (android.widget.Switch) findViewById(R.id.setting_other_touch_vib_switch);
         mHolder.failure.setVisibility(View.INVISIBLE);
         mHolder.success.setVisibility(View.INVISIBLE);
         mHolder.progressBar.setVisibility(View.INVISIBLE);
@@ -72,6 +75,18 @@ public class Settings extends AppCompatActivity {
         mHolder.port.setText(mStorageSetting.getString(StorageSetting.PREFS_SERVER_PORT));
         mHolder.user.setText(mStorageSetting.getString(StorageSetting.PREFS_SERVER_USER));
         mHolder.password.setText(mStorageSetting.getString(StorageSetting.PREFS_SERVER_PASSWORD));
+        mHolder.vibration.setChecked(mStorageSetting.getBoolean(StorageSetting.PREFS_VIBRATION));
+
+        mHolder.vibration.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                android.widget.Switch toggle = (android.widget.Switch) v;
+                if (toggle.isChecked())
+                {
+                    Vibrate.vibrate(getApplicationContext());
+                }
+            }
+        });
 
         // Set on click listeners for buttons
         mHolder.test_connnection.setOnClickListener(new View.OnClickListener() {
@@ -137,6 +152,8 @@ public class Settings extends AppCompatActivity {
             mStorageSetting.save(StorageSetting.PREFS_SERVER_PASSWORD, mHolder.password.getText().toString());
         }
 
+        mStorageSetting.save(StorageSetting.PREFS_VIBRATION, mHolder.vibration.isChecked());
+
         // Hide keyboard
         View view = this.getCurrentFocus();
         hideKeyboard(view);
@@ -156,6 +173,7 @@ public class Settings extends AppCompatActivity {
         ProgressBar progressBar;
         ImageView success;
         ImageView failure;
+        android.widget.Switch vibration;
     }
 
     private View.OnFocusChangeListener mFocusListener = new View.OnFocusChangeListener() {

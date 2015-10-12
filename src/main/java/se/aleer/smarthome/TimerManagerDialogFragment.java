@@ -95,7 +95,7 @@ public class TimerManagerDialogFragment extends DialogFragment {
             }
         });
 
-        mViewHolder.name.setText(mTimer.getTitle());
+        mViewHolder.name.setText(mTimer.getName());
         return view;
     }
 
@@ -131,7 +131,7 @@ public class TimerManagerDialogFragment extends DialogFragment {
         for(Switch s : selectedSwitches){
             mTimer.addSwitch(s.getId());
         }
-        mTimer.setTitle(mViewHolder.name.getText().toString());
+        mTimer.setName(mViewHolder.name.getText().toString());
         // Send edited/added timer back...
         Intent intent = new Intent();
         Gson gson = new Gson();

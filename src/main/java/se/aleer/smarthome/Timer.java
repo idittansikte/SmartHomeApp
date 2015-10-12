@@ -4,17 +4,14 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.TreeSet;
 
-public class Timer {
+public class Timer extends ItemList {
 
-    private int mId;
-    private String mTitle;
     private int mTimeOnHour;
     private int mTimeOnMin;
     private int mTimeOffHour;
     private int mTimeOffMin;
-    // Not implemented yet!
-    private List<Integer> mSwitches; // SwitchID|SwitchName
 
     public Timer(int id){
         this(id, "");
@@ -25,21 +22,11 @@ public class Timer {
     }
 
     public Timer(int id, String title, int onHour, int onMin, int offHour, int offMin){
-        mId = id;
-        mTitle = title;
+        super(id, title);
         mTimeOnHour = onHour;
         mTimeOnMin = onMin;
         mTimeOffHour = offHour;
         mTimeOffMin = offMin;
-        mSwitches = new ArrayList<>();
-    }
-
-    public void setTitle(String title){
-        this.mTitle = title;
-    }
-
-    public String getTitle(){
-        return mTitle;
     }
 
     public void setTimeOff(int hour, int minute){
@@ -64,43 +51,8 @@ public class Timer {
         return mTimeOnHour;
     }
 
-    public int getId(){
-        return mId;
-    }
-    public void setId(int id){
-        mId = id;
-    }
-
-    public void addSwitch(int sid){
-        if(!mSwitches.contains(sid))
-            mSwitches.add(sid);
-    }
-
-    public void removeSwitch(int sid){
-        mSwitches.remove(sid);
-    }
-
-    public boolean haveSwitch(int id){
-        if(mSwitches.contains(id)){
-            return true;
-        }else
-            return false;
-    }
-
-    public List<Integer> getSwitchList(){
-        return mSwitches;
-    }
-
-    public void clearSwitchList(){
-        mSwitches.clear();
-    }
-
     public String toString(){
-        String switches = "";
-        for( Integer swID : mSwitches){
-            switches += swID + ":";
-        }
-        return mId + ":" + mTimeOnHour + ":" + mTimeOnMin + ":" + mTimeOffHour + ":" + mTimeOffMin + ":" + switches;
+        return getId() + ":" + mTimeOnHour + ":" + mTimeOnMin + ":" + mTimeOffHour + ":" + mTimeOffMin + ":" + switchListToString();
     }
 
     @Override

@@ -68,7 +68,7 @@ public class SwitchManagerFragment extends DialogFragment {
             this.radioButton_single = (RadioButton) view.findViewById(R.id.radioButton_single);
             this.radioButton_multi = (RadioButton) view.findViewById(R.id.radioButton_multi);
             this.spinner = (Spinner) view.findViewById(R.id.S_M_F_protocol_spinner);
-            this.nameView = (EditText) view.findViewById(R.id.S_M_F_name_edit);
+            this.nameView = (EditText) view.findViewById(R.id.et_name);
             this.save = (Button) view.findViewById(R.id.save_button);
             this.remove = (Button) view.findViewById(R.id.remove_button);
         }
@@ -90,7 +90,6 @@ public class SwitchManagerFragment extends DialogFragment {
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setHasOptionsMenu(true);
-        ((RemoteControl)getActivity()).showUpButton();
         Bundle b = getArguments();
         if (b != null){
             String gsonString = b.getString("Switch");
@@ -112,15 +111,15 @@ public class SwitchManagerFragment extends DialogFragment {
     @Override
     public void onCreateOptionsMenu(Menu menu, MenuInflater inflater){
         inflater.inflate(R.menu.menu_switch_manager, menu);
-        if(mSwitch == null) {
-            menu.findItem(R.id.action_remove_switch).setVisible(false);
-        }
+        //if(mSwitch == null) {
+        //    menu.findItem(R.id.action_remove_switch).setVisible(false);
+        //}
     }
 
     @Override
     public boolean onOptionsItemSelected(MenuItem item){
         switch (item.getItemId()) {
-            case R.id.action_remove_switch:
+            /*case R.id.action_remove_switch:
                 sendResult(REQUEST_CODE_DELETE);
                 return true;
             case R.id.action_save_switch:
@@ -129,7 +128,7 @@ public class SwitchManagerFragment extends DialogFragment {
                 }
                 populateSwitch();
                 sendResult(REQUEST_CODE_DELETE);
-                return true;
+                return true;*/
             default:
                 return super.onOptionsItemSelected(item);
         }

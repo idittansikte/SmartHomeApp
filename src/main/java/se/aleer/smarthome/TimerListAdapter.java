@@ -66,7 +66,7 @@ public class TimerListAdapter extends ArrayAdapter<Timer> {
             holder = (ViewHolder) mViewToUse.getTag();
         }
         Timer item = (Timer)getItem(position);
-        holder.titleText.setText(item.getTitle());
+        holder.titleText.setText(item.getName());
         String onHour = "";
         String onMinute = "";
         String offHour = "";

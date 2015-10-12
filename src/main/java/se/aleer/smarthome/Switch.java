@@ -7,15 +7,14 @@ import android.util.Log;
 import java.util.List;
 import java.util.Objects;
 
-public class Switch {
+public class Switch extends Item {
 
-    private int mId;
-    private int mController;
-    private String mName;
     private int mStatus;
     private int mProtocol;
     private boolean mSingle;
     private int mTimerId;
+    public transient boolean waitingUpdate;
+    public transient boolean hasTimer;
     private List<Integer> mMultiSwitchArray;
 
     public Switch(){ // This is called when loaded from memory for some reason?
@@ -24,13 +23,13 @@ public class Switch {
 
     public Switch(int id, int controller, String name)
     {
-        this.mId = id;
-        this.mController = controller;
-        this.mName = name;
+        super(id, name);
         this.mStatus = -1;
         this.mProtocol = 1;
         this.mSingle = true;
         this.mTimerId=-1;
+        this.waitingUpdate = false;
+        this.hasTimer = false;
     }
 
     public Switch(int id, String name)
@@ -59,21 +58,6 @@ public class Switch {
         mStatus = state;
     }
 
-    public int getId(){ return mId; }
-    public void setId(int id){ this.mId = id;}
-
-    public int getController(){
-        return mController;
-    }
-
-    public String getName(){ return mName; }
-    public void setName(String name){ this.mName = name; }
-
-
-    public void setController(int controller){ this.mController = controller; }
-
-
-
     public int getProtocol() { return mProtocol; }
     public void setProtocol( int protocol ) { mProtocol = protocol; }
 
@@ -91,7 +75,7 @@ public class Switch {
 
     @Override
     public String toString() {
-        return "Switch [id=" + mId + ", controller=" + mController + ", name=" + mName + "]";
+        return super.toString() + mStatus + ":" ;
     }
 
 }

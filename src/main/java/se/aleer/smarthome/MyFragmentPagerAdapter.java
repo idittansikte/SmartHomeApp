@@ -8,13 +8,14 @@ import android.util.Log;
 import android.view.ViewGroup;
 
 public class MyFragmentPagerAdapter extends FragmentPagerAdapter {
-    final int PAGE_COUNT = 2;
-    private String tabTitles[] = new String[] { "Overview", "Timers" };
+    final int PAGE_COUNT = 3;
+    private String tabTitles[] = new String[] { "Overview", "Timers", "Light Sensors" };
     private Context context;
     //public String SWITCH_FRAG_TAG;
     //public String TIMER_FRAG_TAG;
     private SwitchListFragment mSwitchFrag;
     private TimerFragment mTimerFrag;
+    private LightSensorFragment mLightSensorFrag;
 
     public MyFragmentPagerAdapter(FragmentManager fm, Context context){
         super(fm);
@@ -35,6 +36,9 @@ public class MyFragmentPagerAdapter extends FragmentPagerAdapter {
             case 1:
                 Log.d("PagerAdapter", "getItem() = 1");
                 return TimerFragment.newInstance(1, tabTitles[position]);
+            case 2:
+                Log.d("PagerAdapter", "getItem() = 1");
+                return LightSensorFragment.newInstance(1, tabTitles[position]);
             default:
                 return null;
         }
@@ -62,6 +66,9 @@ public class MyFragmentPagerAdapter extends FragmentPagerAdapter {
             case 1:
                 mTimerFrag = (TimerFragment) createdFragment;
                 break;
+            case 2:
+                mLightSensorFrag = (LightSensorFragment) createdFragment;
+                break;
         }
         // ... save the tags somewhere so you can reference them later
         return createdFragment;
@@ -72,5 +79,9 @@ public class MyFragmentPagerAdapter extends FragmentPagerAdapter {
     }
     public TimerFragment getTimerFragment(){
         return mTimerFrag;
+    }
+
+    public LightSensorFragment getLightSensorFragment(){
+        return mLightSensorFrag;
     }
 }

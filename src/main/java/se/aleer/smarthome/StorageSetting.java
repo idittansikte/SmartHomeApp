@@ -14,6 +14,7 @@ public class StorageSetting {
     public static final String PREFS_SERVER_PORT = "server_port";
     public static final String PREFS_SERVER_USER = "server_user";
     public static final String PREFS_SERVER_PASSWORD = "server_password";
+    public static final String PREFS_VIBRATION = "setting_vibration";
     /* DO NOT EDIT THESE */
 
     private SharedPreferences mSharedPreferences = null;
@@ -40,11 +41,23 @@ public class StorageSetting {
         }
     }
 
+    public void save(String key, Boolean value){
+        if (value != null) {
+            SharedPreferences.Editor editor = mSharedPreferences.edit();
+            editor.putBoolean(key, value);
+            editor.apply();
+        }
+    }
+
     public String getString(String key){
        return mSharedPreferences.getString(key, null);
     }
 
     public int getInt(String key){
         return mSharedPreferences.getInt(key, 0);
+    }
+
+    public Boolean getBoolean(String key){
+        return mSharedPreferences.getBoolean(key, false);
     }
 }

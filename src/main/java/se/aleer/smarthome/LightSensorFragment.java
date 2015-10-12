@@ -2,13 +2,11 @@ package se.aleer.smarthome;
 
 import android.content.Context;
 import android.content.Intent;
-import android.support.design.widget.FloatingActionButton;
-import android.support.v4.app.FragmentTransaction;
-import android.app.TimePickerDialog;
 import android.os.Bundle;
 import android.support.v4.app.DialogFragment;
 import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentManager;
+import android.support.v4.app.FragmentTransaction;
 import android.util.Log;
 import android.view.ContextMenu;
 import android.view.LayoutInflater;
@@ -30,24 +28,26 @@ import java.util.List;
 import java.util.Map;
 import java.util.TreeSet;
 
-
-public class TimerFragment extends Fragment implements TimerListAdapter.customTextTimeListener, TimePickerDialog.OnTimeSetListener {
+/**
+ * Created by alex on 2015-10-09.
+ */
+public class LightSensorFragment extends Fragment implements LightSensorListAdapter.lightSensorAdapterInterface{
 
     public static String TAG = "TimerFragment";
     private final int REQUEST_CODE_MANGER = 314;
     private final int REQUEST_CODE_PICKER = 124;
-    private List<Timer> mList;
-    private TimerListAdapter mTimerListAdapter;
+    private List<LightSensor> mList;
+    private LightSensorListAdapter mListAdapter;
     private int mCurrentTimerPos;
     private Boolean mCurrentTimerWhat;
     private Map<Integer, String> mSwitches;
-    private TimerFragmentListener mCallback;
+    private LightSensorFragmentListener mCallback;
 
-    public interface TimerFragmentListener {
+    public interface LightSensorFragmentListener {
         public Map<Integer,String> onGetSwitchList();
-        public void saveTimer(String timer);
-        public void removeTimer(String timer);
-        public void onTimerListChange(TreeSet<Integer/*Switch ID*/> switchTree);
+        public void saveLightSensor(String timer);
+        public void removeLightSensor(String timer);
+        public void onLightSensorListChange(TreeSet<Integer/*Switch ID*/> switchTree);
     }
 
     @Override
@@ -56,7 +56,7 @@ public class TimerFragment extends Fragment implements TimerListAdapter.customTe
         // This makes sure that the container activity has implemented
         // the callback interface. If not, it throws an exception
         try {
-            mCallback = (TimerFragmentListener) context;
+            mCallback = (LightSensorFragmentListener) context;
         } catch (ClassCastException e) {
             throw new ClassCastException(context.toString()
                     + " must implement OnEditSwitchListener");
@@ -64,8 +64,8 @@ public class TimerFragment extends Fragment implements TimerListAdapter.customTe
 
     }
 
-    public static TimerFragment newInstance(int page, String title){
-        TimerFragment fragment = new TimerFragment();
+    public static LightSensorFragment newInstance(int page, String title){
+        LightSensorFragment fragment = new LightSensorFragment();
         Bundle args = new Bundle();
         args.putInt("page", page);
         args.putString("title", title);
@@ -78,14 +78,14 @@ public class TimerFragment extends Fragment implements TimerListAdapter.customTe
         super.onCreate(savedInstanceState);
         setHasOptionsMenu(true);
         mSwitches = new HashMap<>();
-        StorageTimers storageTimers = new StorageTimers();
-        mList = storageTimers.getTimerList(getContext());
+        StorageLightSensor storageLightSensor = new StorageLightSensor();
+        mList = storageLightSensor.getList(getContext());
         // Check if there is something in memory
         if(mList == null){ // If not, create a new one
             mList = new ArrayList<>();
         }
-        mTimerListAdapter = new TimerListAdapter(getActivity(), mList);
-        mTimerListAdapter.setCustomTextTimeListener(this);
+        mListAdapter = new LightSensorListAdapter(getActivity(), mList);
+        mListAdapter.setListener(this);
     }
 
     /*
@@ -104,8 +104,8 @@ public class TimerFragment extends Fragment implements TimerListAdapter.customTe
     @Override
     public void onPause() {
         super.onPause();
-        StorageTimers storageTimers = new StorageTimers();
-        storageTimers.saveTimerList(getContext(), mList);
+        StorageLightSensor storageLightSensor = new StorageLightSensor();
+        storageLightSensor.saveList(getContext(), mList);
     }
 
     @Override
@@ -117,7 +117,7 @@ public class TimerFragment extends Fragment implements TimerListAdapter.customTe
         // Set adapter listener
         registerForContextMenu(listView);
         // -----------------
-        listView.setAdapter(mTimerListAdapter);
+        listView.setAdapter(mListAdapter);
         //listView.setOnItemLongClickListener(mListViewListener);
 
         return view;
@@ -174,7 +174,7 @@ public class TimerFragment extends Fragment implements TimerListAdapter.customTe
     public boolean onContextItemSelected(MenuItem item) {
         AdapterView.AdapterContextMenuInfo info = (AdapterView.AdapterContextMenuInfo)item.getMenuInfo();
         int menuItemIndex = item.getItemId();
-        Timer selectedTimer = mList.get(info.position);
+        LightSensor selectedTimer = mList.get(info.position);
         switch (menuItemIndex){
             case 0: // Edit
                 showManagerDialog(selectedTimer);
@@ -199,7 +199,7 @@ public class TimerFragment extends Fragment implements TimerListAdapter.customTe
      * Result: show time picker dialog
      */
     @Override
-    public void onEditTimeListener(int position, Boolean value) {
+    public void onListItemClick(int position, Boolean value) {
         mCurrentTimerPos = position;
         mCurrentTimerWhat = value;
 
@@ -220,7 +220,7 @@ public class TimerFragment extends Fragment implements TimerListAdapter.customTe
      */
     private TreeSet<Integer> getOccupiedSwitches(){
         TreeSet<Integer> occupiedSw = new TreeSet<>();
-        for(Timer t : mList){
+        for(LightSensor t : mList){
             for(Integer sid : t.getSwitchList())
                 occupiedSw.add(sid);
         }
@@ -232,7 +232,7 @@ public class TimerFragment extends Fragment implements TimerListAdapter.customTe
      *
      * @param timer The timer that is about to get changed or added.
      */
-    private void showManagerDialog(Timer timer){
+    private void showManagerDialog(LightSensor timer){
 
         mSwitches = mCallback.onGetSwitchList();
 
@@ -261,7 +261,7 @@ public class TimerFragment extends Fragment implements TimerListAdapter.customTe
             bundle.putString(TimerManagerDialogFragment.SWITCHES_BUNDLE_KEY, gsonSwitchList); // id
             //Log.d("TTT", timer.getTitle());
         } else { // If new timer is to be added
-            Timer nt = new Timer(Item.generate_unique_id(mList));
+            Timer nt = new Timer(Item.generate_unique_id(mList));//new Timer(generate_timer_id());
             Toast.makeText(getContext(), "Timer id:" + nt.getId(), Toast.LENGTH_LONG).show();
             bundle.putString(TimerManagerDialogFragment.TIMER_BUNDLE_KEY, gson.toJson(nt)); // New generated id
             bundle.putString(TimerManagerDialogFragment.SWITCHES_BUNDLE_KEY, gson.toJson(availableSw)); // Name
@@ -273,21 +273,22 @@ public class TimerFragment extends Fragment implements TimerListAdapter.customTe
 
     /**
      *  Called when user have picked a time in TimePickerDialogFragment
-     */
+
     @Override
     public void onTimeSet(TimePicker view, int hourOfDay, int minute) {
         Log.d(TAG, "TimePickerDialogFragment " + hourOfDay + ":" + minute);
-        Timer timer = mList.get(mCurrentTimerPos);
+        LightSensor lightSensor = mList.get(mCurrentTimerPos);
         if (mCurrentTimerWhat == TimerListAdapter.TIME_ON)
-            timer.setTimeOn(hourOfDay, minute);
+            lightSensor.setValueOn(0);
         else
-            timer.setTimeOff(hourOfDay, minute);
+            lightSensor.setValueOff(0);
 
-        for(Integer i : timer.getSwitchList()){
+        for(Integer i : lightSensor.getSwitchList()){
             Log.d(TAG, "Timer have switch: " + i );
         }
-        saveTimer(timer);
+        saveTimer(lightSensor);
     }
+     */
 
     /**
      * Called when the TimeManagerDialogFragment have edited or added a timer.
@@ -303,13 +304,13 @@ public class TimerFragment extends Fragment implements TimerListAdapter.customTe
 
             case REQUEST_CODE_MANGER:
                 Gson gson = new Gson();
-                Timer timer = gson.fromJson(data.getStringExtra(TimerManagerDialogFragment.TIMER_BUNDLE_KEY), Timer.class);
+                LightSensor lightSensor = gson.fromJson(data.getStringExtra(TimerManagerDialogFragment.TIMER_BUNDLE_KEY), LightSensor.class);
 
-                if(mList.contains(timer))
-                    deleteTimer(timer);
-                saveTimer(timer);
+                if(mList.contains(lightSensor))
+                    deleteTimer(lightSensor);
+                saveTimer(lightSensor);
                 // Notify SwitchListFragment that the list have changed and send all new occupied switch-ids..
-                mCallback.onTimerListChange(getOccupiedSwitches());
+                mCallback.onLightSensorListChange(getOccupiedSwitches());
                 break;
             case REQUEST_CODE_PICKER:
 
@@ -320,26 +321,25 @@ public class TimerFragment extends Fragment implements TimerListAdapter.customTe
 
     }
 
-
-    private void deleteTimer(final Timer timer){
-        mList.remove(timer);
-        mTimerListAdapter.notifyDataSetChanged();
+    private void deleteTimer(final LightSensor lightSensor){
+        mList.remove(lightSensor);
+        mListAdapter.notifyDataSetChanged();
         saveToMemory();
 
         // Send add command;
-        mCallback.removeTimer(Integer.toString(timer.getId()));
+        mCallback.removeLightSensor(Integer.toString(lightSensor.getId()));
     }
 
-    private void saveTimer(final Timer timer){
-        if( mList.contains(timer)) {
-           // TODO: HERE's WHERE I LEFT
+    private void saveTimer(final LightSensor lightSensor){
+        if( mList.contains(lightSensor)) {
+            // TODO: HERE's WHERE I LEFT
         }else // If completely new timer
         {
-            mList.add(timer);
+            mList.add(lightSensor);
         }
         saveToMemory();
-        mTimerListAdapter.notifyDataSetChanged();
-        mCallback.saveTimer(timer.toString());
+        mListAdapter.notifyDataSetChanged();
+        mCallback.saveLightSensor(lightSensor.toString());
     }
 
     /*
@@ -347,25 +347,25 @@ public class TimerFragment extends Fragment implements TimerListAdapter.customTe
      *
      * Input is all timers at server and that's the most recent ones
      */
-    public void serverSync(List<Timer> serverTimers){
-        if(serverTimers.isEmpty())
+    public void serverSync(List<LightSensor> serverLightSensors){
+        if(serverLightSensors.isEmpty())
             return;
-        List<Timer> newList = new ArrayList<>();
+        List<LightSensor> newList = new ArrayList<>();
         try {
-            for(Timer timer : serverTimers){
-                int index = mList.indexOf(timer);
+            for(LightSensor lightSensor : serverLightSensors){
+                int index = mList.indexOf(lightSensor);
                 if(index == -1){ // If it doesn't exist in our list
-                    newList.add(timer); // Add it
+                    newList.add(lightSensor); // Add it
                 }else { // IF it exists in our list
                     // Replace it with servers timer
-                    timer.setName(mList.get(index).getName());
-                    newList.add(timer);
+                    lightSensor.setName(mList.get(index).getName());
+                    newList.add(lightSensor);
                 }
             }
             // Replace server syncList with current old one...
             mList.clear();
             mList.addAll(newList);
-            mTimerListAdapter.notifyDataSetChanged();
+            mListAdapter.notifyDataSetChanged();
         }catch (Exception e){
             Toast.makeText(getContext(), "Unable  ", Toast.LENGTH_LONG).show();
             Log.e("updateArrayAdapter", "Could not parse server message. Error: " + e.getMessage());
@@ -373,7 +373,7 @@ public class TimerFragment extends Fragment implements TimerListAdapter.customTe
     }
 
     private void saveToMemory(){
-        StorageTimers storageTimers = new StorageTimers();
-        storageTimers.saveTimerList(getContext(), mList);
+        StorageLightSensor storageLightSensor = new StorageLightSensor();
+        storageLightSensor.saveList(getContext(), mList);
     }
 }

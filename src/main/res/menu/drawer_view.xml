@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android">
+    <item android:title="Add">
+        <group>
+            <item
+                android:id="@+id/nav_first_fragment"
+                android:icon="@drawable/ic_power_black"
+                android:title="Add switch" />
+            <item
+                android:id="@+id/nav_second_fragment"
+                android:icon="@drawable/ic_clock_black"
+                android:title="Add timer" />
+        </group>
+    </item>
+
+<item android:title="Sub items">
+
+<menu>
+
+    <item
+        android:icon="@drawable/androidsettings128"
+        android:title="Settings" />
+
+    <item
+        android:icon="@drawable/ic_info_black"
+        android:title="About" />
+
+</menu>
+
+</item>
+
+</menu>

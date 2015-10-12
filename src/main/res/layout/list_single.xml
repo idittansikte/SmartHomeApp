@@ -2,49 +2,77 @@
 <RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:paddingBottom="6dp"
-    android:paddingTop="6dp"
+    android:paddingBottom="3dp"
+    android:paddingTop="3dp"
     android:id="@+id/single_list_head">
 
-    <FrameLayout
+    <TextView
+        android:id="@+id/text"
+        android:textSize="20sp"
         android:layout_width="wrap_content"
         android:layout_height="50dp"
-        android:focusable = "false"
-        android:focusableInTouchMode = "false">
-        <TextView
-            android:id="@+id/text"
-            android:textSize="20sp"
-            android:layout_width="120dp"
-            android:layout_height="match_parent"
-            android:layout_gravity="left"
-            android:layout_marginLeft="15dp"
-            android:gravity="center_vertical"
-            android:textStyle="bold"
-            android:focusable = "false"
-            android:focusableInTouchMode = "false"/>
-    </FrameLayout>
-    <ImageButton
-        android:id="@+id/single_list_button"
-        android:src="@drawable/button_white_128"
-        android:background="@color/transparent"
-        android:layout_width="50dp"
-        android:layout_height="50dp"
-        android:layout_alignParentRight="true"
-        android:layout_alignParentEnd="true"
-        android:layout_gravity="end"
-        android:cropToPadding="false"
-        android:layout_marginRight="10dp"
-        android:scaleType="fitXY"
+        android:layout_alignParentStart="true"
+        android:layout_toStartOf="@+id/indicators"
+        android:maxLines="1"
+        android:layout_marginEnd="15dp"
+        android:layout_marginStart="15dp"
+        android:gravity="center_vertical"
+        android:textStyle="bold"
         android:focusable = "false"
         android:focusableInTouchMode = "false"/>
 
-    <ProgressBar
-        android:id="@+id/single_list_loading"
-        android:layout_width="50dp"
-        android:layout_height="50dp"
-        android:visibility="invisible"
-        style="?android:attr/progressBarStyleLarge"
-        android:layout_marginRight="10dp"
-        android:layout_alignParentRight="true"
-        android:layout_alignParentEnd="true"/>
+        <LinearLayout
+            android:id="@+id/indicators"
+            android:layout_height="50dp"
+            android:layout_width="20dp"
+            android:layout_toStartOf="@+id/single_list_button"
+            android:layout_marginEnd="5dp"
+            android:layout_marginStart="5dp"
+            android:orientation="vertical"
+            android:focusable = "false"
+            android:focusableInTouchMode = "false">
+        <ImageView
+            android:id="@+id/has_timer_indicator"
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="1"
+            android:layout_gravity="center"
+            android:contentDescription="@string/switch_has_timer_indicator_desc"
+            android:src="@drawable/ic_clock_white"/>
+        <ImageView
+            android:id="@+id/has_light_sensor_indicator"
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="1"
+            android:layout_gravity="center"
+            android:contentDescription="@string/switch_lightSensor_indicator_desc"
+            android:src="@drawable/ic_sun_white"/>
+        </LinearLayout>
+
+        <ImageButton
+            android:id="@+id/single_list_button"
+            android:layout_width="50dp"
+            android:layout_height="50dp"
+            android:src="@drawable/button_white_128"
+            android:background="@color/transparent"
+            android:layout_alignParentEnd="true"
+            android:adjustViewBounds="true"
+            android:contentDescription="@string/switch_button_status_desc"
+            android:cropToPadding="false"
+            android:scaleType="fitXY"
+            android:focusable = "false"
+            android:focusableInTouchMode = "false"/>
+
+        <ProgressBar
+            android:id="@+id/single_list_loading"
+            android:layout_width="50dp"
+            android:layout_height="50dp"
+            android:layout_alignParentEnd="true"
+            android:adjustViewBounds="true"
+            android:scaleType="fitXY"
+            android:visibility="invisible"
+            style="?android:attr/progressBarStyleLarge"
+            android:clickable="false"
+            android:focusable="false"
+            android:focusableInTouchMode="false" />
 </RelativeLayout>
