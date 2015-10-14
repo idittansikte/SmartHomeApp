@@ -33,7 +33,7 @@ import java.util.TreeSet;
 
 public class TimerFragment extends Fragment implements TimerListAdapter.customTextTimeListener, TimePickerDialog.OnTimeSetListener {
 
-    public static String TAG = "TimerFragment";
+    public static final String TAG = "TimerFragment";
     private final int REQUEST_CODE_MANGER = 314;
     private final int REQUEST_CODE_PICKER = 124;
     private List<Timer> mList;
@@ -42,11 +42,10 @@ public class TimerFragment extends Fragment implements TimerListAdapter.customTe
     private Boolean mCurrentTimerWhat;
     private Map<Integer, String> mSwitches;
     private TimerFragmentListener mCallback;
+    private RequestInterface mRequestCallback;
 
     public interface TimerFragmentListener {
         public Map<Integer,String> onGetSwitchList();
-        public void saveTimer(String timer);
-        public void removeTimer(String timer);
         public void onTimerListChange(TreeSet<Integer/*Switch ID*/> switchTree);
     }
 
@@ -327,7 +326,7 @@ public class TimerFragment extends Fragment implements TimerListAdapter.customTe
         saveToMemory();
 
         // Send add command;
-        mCallback.removeTimer(Integer.toString(timer.getId()));
+        mRequestCallback.sendRequest(TAG, ServerRequestMaker.makeRemoveTimerRequest(timer));
     }
 
     private void saveTimer(final Timer timer){
@@ -339,7 +338,7 @@ public class TimerFragment extends Fragment implements TimerListAdapter.customTe
         }
         saveToMemory();
         mTimerListAdapter.notifyDataSetChanged();
-        mCallback.saveTimer(timer.toString());
+        mRequestCallback.sendRequest(TAG, ServerRequestMaker.makeSaveTimerRequest(timer));
     }
 
     /*

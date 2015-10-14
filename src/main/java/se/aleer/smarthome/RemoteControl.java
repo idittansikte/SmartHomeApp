@@ -1,5 +1,6 @@
 package se.aleer.smarthome;
 
+import android.content.Context;
 import android.support.v4.view.GravityCompat;
 import android.support.v7.app.ActionBar;
 import android.content.Intent;
@@ -21,7 +22,7 @@ import java.util.Map;
 import java.util.TreeSet;
 
 public class RemoteControl extends AppCompatActivity implements TimerFragment.TimerFragmentListener, MyResultReceiver.Receiver, SwitchListFragment.SwitchFragmentListener,
-                                                                LightSensorFragment.LightSensorFragmentListener {
+                                                                LightSensorFragment.LightSensorFragmentListener, RequestInterface {
 
     private static final String TAG = "RemoteControl";
     public final static String serviceTag = "RCServiceTag";
@@ -170,49 +171,9 @@ public class RemoteControl extends AppCompatActivity implements TimerFragment.Ti
 
     }
 
-    /**
-     * Send a switch save/add request to the service
-     *
-     * @param swch The string representation of the purpose of the task. See server code for more info.
-     */
-    public void saveSwitch(String swch){
-        startService(ClientRequest.saveSwitchIntent(getApplicationContext(), mReceiver, SwitchListFragment.TAG, swch));
-    }
-
-    /**
-     * Send a switch remove request to the service
-     *
-     * @param swch The string representation of the purpose of the task. See server code for more info.
-     */
-    public void removeSwitch(String swch){
-        startService(ClientRequest.removeSwitchIntent(getApplicationContext(), mReceiver, SwitchListFragment.TAG, swch));
-    }
-
-    /**
-     * Send a switch status change request to the service
-     *
-     * @param swch The string representation of the purpose of the task. See server code for more info.
-     */
-    public void changeSwitchStatus(String swch){
-        startService(ClientRequest.statusSwitchIntent(getApplicationContext(), mReceiver, SwitchListFragment.TAG, swch));
-    }
-
-    /**
-     * Send a timer save/add request to the service
-     *
-     * @param timer The string representation of the purpose of the task. See server code for more info.
-     */
-    public void saveTimer(String timer){
-        startService(ClientRequest.saveTimerIntent(getApplicationContext(), mReceiver, TimerFragment.TAG, timer));
-    }
-
-    /**
-     * Send a timer remove request to the service
-     *
-     * @param timer The string representation of the purpose of the task. See server code for more info.
-     */
-    public void removeTimer(String timer){
-        startService(ClientRequest.removeTimerIntent(getApplicationContext(), mReceiver, TimerFragment.TAG, timer));
+    @Override
+    public void sendRequest(final String tag, final String request){
+        startService(makeRequestIntent(mReceiver, tag, request));
     }
 
     public void onTimerListChange(TreeSet<Integer/*Switch ID*/> switchTree){
@@ -220,6 +181,14 @@ public class RemoteControl extends AppCompatActivity implements TimerFragment.Ti
         if(sf != null){ // Shouldn't happen...
             sf.onTimerListChange(switchTree);
         }
+    }
+
+    public Intent makeRequestIntent(MyResultReceiver receiver, String client, String request){
+        Intent i = new Intent(this, ClientIntentService.class);
+        i.putExtra(ClientIntentService.recTag, receiver);
+        i.putExtra(ClientIntentService.recClient, client);
+        i.putExtra(ClientIntentService.recRequest, request);
+        return i;
     }
 
     /**
@@ -230,7 +199,8 @@ public class RemoteControl extends AppCompatActivity implements TimerFragment.Ti
     final Runnable mRunnable = new Runnable() {
         @Override
         public void run() {
-            startService(ClientRequest.getListIntent(getApplicationContext(), mReceiver, TAG));
+            String request = ServerRequestMaker.makeGetListRequest();
+            startService(makeRequestIntent(mReceiver, TAG, request));
             mHandler.postDelayed(mRunnable, 10000);
         }
     };
@@ -277,28 +247,37 @@ public class RemoteControl extends AppCompatActivity implements TimerFragment.Ti
         // TODO Auto-generated method stub
         String client = resultData.getString(ClientIntentService.recClient);
         if(client != null && !client.isEmpty() ){
-            if (client.equals(TAG)){ // It's this activity's order
-                //Toast.makeText(this, client + ": " + resultData.getString(ClientIntentService.recResponce), Toast.LENGTH_SHORT).show();
-                Log.d(TAG, resultData.getString(ClientIntentService.recResponce));
-                feedFragments(resultData.getString(ClientIntentService.recResponce));
-            }else if (client.equals(SwitchListFragment.TAG)){
-                Toast.makeText(this, client + ": " + resultData.getString(ClientIntentService.recResponce), Toast.LENGTH_SHORT).show();
-                SwitchListFragment sf = mAdapterViewPager.getSwitchFragment();
-                if(sf != null) {
-                    if (resultCode == 0)
-                        sf.onRequestFinished(true);
-                    else
-                        sf.onRequestFinished(false);
-                }
-            }else if (client.equals(TimerFragment.TAG)){
-                Toast.makeText(this, client + ": " + resultData.getString(ClientIntentService.recResponce), Toast.LENGTH_SHORT).show();
-                TimerFragment tf = mAdapterViewPager.getTimerFragment();
-                if(tf != null) {
+            switch (client){
+                case TAG:
 
-                }
+                    //Toast.makeText(this, client + ": " + resultData.getString(ClientIntentService.recResponce), Toast.LENGTH_SHORT).show();
+                    Log.d(TAG, resultData.getString(ClientIntentService.recResponce));
+                    feedFragments(resultData.getString(ClientIntentService.recResponce));
+
+                    break;
+                case SwitchListFragment.TAG:
+
+                    Toast.makeText(this, client + ": " + resultData.getString(ClientIntentService.recResponce), Toast.LENGTH_SHORT).show();
+                    SwitchListFragment sf = mAdapterViewPager.getSwitchFragment();
+                    if(sf != null) {
+                        if (resultCode == 0)
+                            sf.onRequestFinished(true);
+                        else
+                            sf.onRequestFinished(false);
+                    }
+
+                    break;
+                case TimerFragment.TAG:
+
+                    Toast.makeText(this, client + ": " + resultData.getString(ClientIntentService.recResponce), Toast.LENGTH_SHORT).show();
+                    TimerFragment tf = mAdapterViewPager.getTimerFragment();
+                    if(tf != null) {
+
+                    }
+
+                    break;
             }
         }
-
     }
 
 }

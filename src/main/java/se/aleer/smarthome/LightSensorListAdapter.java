@@ -30,7 +30,8 @@ public class LightSensorListAdapter extends ArrayAdapter<LightSensor> {
     }
 
     /**
-     * Holder for the list items.
+     * The view holder design pattern prevents using findViewById()
+     * repeatedly in the getView() method of the adapter.
      */
     private class ViewHolder{
         public TextView titleText;

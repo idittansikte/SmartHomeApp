@@ -33,7 +33,7 @@ public class SwitchListFragment extends Fragment implements FragmentManager.OnBa
     // Some random code that is sent to switch manager and get back.
     private int REQUEST_CODE = 134;
     public static final String ARG_ITEM_ID = "favorite_list";
-    public static String TAG = "SwitchListFragment";
+    public static final String TAG = "SwitchListFragment";
     private StorageSwitches mStorageSwitches;
     private Activity mActivity;
     List<Switch> mSwitches;
@@ -41,6 +41,7 @@ public class SwitchListFragment extends Fragment implements FragmentManager.OnBa
     private SwitchListAdapter mSwitchListAdapter;
     final Handler mHandler = new Handler();
     private SwitchFragmentListener mCallback;
+    private RequestInterface mRequestCallback;
     /** FIFO queue to know what request is sent back */
     public static final int REQUEST_REMOVE = 0;
     public static final int REQUEST_STATUS = 1;
@@ -50,9 +51,9 @@ public class SwitchListFragment extends Fragment implements FragmentManager.OnBa
 
     public interface SwitchFragmentListener {
         public Map<Integer,String> onGetSwitchList();
-        public void saveSwitch(String swtch);
-        public void removeSwitch(String swtch);
-        public void changeSwitchStatus(String swtch);
+        //public void saveSwitch(String swtch);
+        //public void removeSwitch(String swtch);
+        //public void changeSwitchStatus(String swtch);
     }
 
     @Override
@@ -62,6 +63,7 @@ public class SwitchListFragment extends Fragment implements FragmentManager.OnBa
         // the callback interface. If not, it throws an exception
         try {
             mCallback = (SwitchFragmentListener) context;
+            mRequestCallback = (RequestInterface) context;
         } catch (ClassCastException e) {
             throw new ClassCastException(context.toString()
                     + " must implement SwitchFragmentListener");
@@ -241,7 +243,7 @@ public class SwitchListFragment extends Fragment implements FragmentManager.OnBa
         // Put request on queue so we can handle the response later
         mSwitchRequestQueue.put(swtch.getId(), REQUEST_SAVE);
         // Send add command to server;
-        mCallback.saveSwitch(Integer.toString(swtch.getId()));
+        mRequestCallback.sendRequest(TAG, ServerRequestMaker.makeSaveSwitchRequest(swtch));
     }
 
     public void add(String name) {
@@ -261,7 +263,7 @@ public class SwitchListFragment extends Fragment implements FragmentManager.OnBa
         // Put request on queue so we can handle the response later
         mSwitchRequestQueue.put(sw.getId(), REQUEST_REMOVE);
         // Send remove command to server;
-        mCallback.removeSwitch(Integer.toString(sw.getId()));
+        mRequestCallback.sendRequest(TAG, ServerRequestMaker.makeRemoveSwitchRequest(sw));
     }
 
  /*   private int getUniqueId() {
@@ -381,8 +383,8 @@ public class SwitchListFragment extends Fragment implements FragmentManager.OnBa
      */
     public void changeStatus(Switch swtch){
         mSwitchRequestQueue.put(swtch.getId(), REQUEST_STATUS);
-        String status = swtch.getId() + ":" + (swtch.getStatus() == 1 ? "0" : "1");
-        mCallback.changeSwitchStatus(status);
+        //String status = swtch.getId() + ":" + (swtch.getStatus() == 1 ? "0" : "1");
+        mRequestCallback.sendRequest(TAG, ServerRequestMaker.makeSwitchStatusRequest(swtch));
     }
 
     /**

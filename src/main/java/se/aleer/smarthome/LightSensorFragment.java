@@ -1,5 +1,6 @@
 package se.aleer.smarthome;
 
+import android.support.v4.app.ListFragment;
 import android.content.Context;
 import android.content.Intent;
 import android.os.Bundle;
@@ -31,22 +32,24 @@ import java.util.TreeSet;
 /**
  * Created by alex on 2015-10-09.
  */
-public class LightSensorFragment extends Fragment implements LightSensorListAdapter.lightSensorAdapterInterface{
+public class LightSensorFragment extends ListFragment implements LightSensorListAdapter.lightSensorAdapterInterface{
 
     public static String TAG = "TimerFragment";
     private final int REQUEST_CODE_MANGER = 314;
     private final int REQUEST_CODE_PICKER = 124;
+
     private List<LightSensor> mList;
     private LightSensorListAdapter mListAdapter;
+    //private ListView mListView;
+
     private int mCurrentTimerPos;
     private Boolean mCurrentTimerWhat;
     private Map<Integer, String> mSwitches;
     private LightSensorFragmentListener mCallback;
+    private RequestInterface mRequestCallback;
 
     public interface LightSensorFragmentListener {
         public Map<Integer,String> onGetSwitchList();
-        public void saveLightSensor(String timer);
-        public void removeLightSensor(String timer);
         public void onLightSensorListChange(TreeSet<Integer/*Switch ID*/> switchTree);
     }
 
@@ -57,11 +60,35 @@ public class LightSensorFragment extends Fragment implements LightSensorListAdap
         // the callback interface. If not, it throws an exception
         try {
             mCallback = (LightSensorFragmentListener) context;
+            mRequestCallback = (RequestInterface) context;
         } catch (ClassCastException e) {
             throw new ClassCastException(context.toString()
                     + " must implement OnEditSwitchListener");
         }
 
+    }
+
+    @Override
+    public void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        setHasOptionsMenu(true);
+        mSwitches = new HashMap<>();
+        StorageLightSensor storageLightSensor = new StorageLightSensor();
+        mList = storageLightSensor.getList(getContext());
+        // Check if there were something in memory
+        if(mList == null){ // If not, create a new list
+            mList = new ArrayList<>();
+        }
+        mListAdapter = new LightSensorListAdapter(getActivity(), mList);
+        setListAdapter(mListAdapter);
+        mListAdapter.setListener(this);
+    }
+
+    @Override
+    public void onActivityCreated(Bundle savedInstanceState)
+    {
+        super.onActivityCreated(savedInstanceState);
+        //mListView.setAdapter(mListAdapter);
     }
 
     public static LightSensorFragment newInstance(int page, String title){
@@ -74,18 +101,8 @@ public class LightSensorFragment extends Fragment implements LightSensorListAdap
     }
 
     @Override
-    public void onCreate(Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
-        setHasOptionsMenu(true);
-        mSwitches = new HashMap<>();
-        StorageLightSensor storageLightSensor = new StorageLightSensor();
-        mList = storageLightSensor.getList(getContext());
-        // Check if there is something in memory
-        if(mList == null){ // If not, create a new one
-            mList = new ArrayList<>();
-        }
-        mListAdapter = new LightSensorListAdapter(getActivity(), mList);
-        mListAdapter.setListener(this);
+    public void onListItemClick(ListView l, View v, int position, long id) {
+        Log.i("HomeFragment", "Item clicked: " + id);
     }
 
     /*
@@ -111,18 +128,26 @@ public class LightSensorFragment extends Fragment implements LightSensorListAdap
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
-        View view = inflater.inflate(R.layout.fragment_timer, container, false);
+        View view = inflater.inflate(R.layout.fragment_light_sensor, container, false);
 
-        ListView listView = (ListView) view.findViewById(R.id.timer_listview);
+        //mListView = (ListView) view.findViewById(R.id.list);
         // Set adapter listener
-        registerForContextMenu(listView);
+        // registerForContextMenu(listView);
         // -----------------
-        listView.setAdapter(mListAdapter);
+        //listView.setAdapter(mListAdapter);
         //listView.setOnItemLongClickListener(mListViewListener);
 
         return view;
 
     }
+
+    @Override
+    public void onViewCreated(View view, Bundle savedInstanceState) {
+        super.onViewCreated(view, savedInstanceState);
+        // remove the dividers from the ListView of the ListFragment
+        //getListView().setDivider(null);
+    }
+
     @Override
     public void onCreateOptionsMenu(Menu menu, MenuInflater inflater) {
         // Inflate the menu; this adds items to the action bar if it is present.
@@ -327,7 +352,7 @@ public class LightSensorFragment extends Fragment implements LightSensorListAdap
         saveToMemory();
 
         // Send add command;
-        mCallback.removeLightSensor(Integer.toString(lightSensor.getId()));
+        //mRequestCallback.sendRequest(TAG, "TO BE IMPLEMENTED");
     }
 
     private void saveTimer(final LightSensor lightSensor){
@@ -339,7 +364,7 @@ public class LightSensorFragment extends Fragment implements LightSensorListAdap
         }
         saveToMemory();
         mListAdapter.notifyDataSetChanged();
-        mCallback.saveLightSensor(lightSensor.toString());
+        //mCallback.saveLightSensor(lightSensor.toString());
     }
 
     /*
